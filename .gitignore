@@ -1,0 +1,40 @@
+# Ignore everything:
+*
+
+# Except for the following:
+# ========================
+
+# Folders
+!dosl-3.0/
+!dosl-3.0/utils/
+!dosl-3.0/planners/
+!test_dosl-3.0/
+
+# Common header files
+!/.gitignore
+!/README.txt
+!/makefile
+!dosl-3.0/dosl.h
+!dosl-3.0/utils/macros_constants.h
+
+# Basic utils
+!dosl-3.0/utils/basic_math.h
+!dosl-3.0/utils/misc_wrappers.h
+
+# Vector implementations
+!dosl-3.0/utils/fast_vector.h
+!dosl-3.0/utils/std_vector.h
+
+# Unordered set (hash table) implementations
+!dosl-3.0/utils/fast_unordered_set.h
+!dosl-3.0/utils/std_unordered_set.h
+
+# Heap implementations
+!dosl-3.0/utils/binary_heap.h
+
+# A-star only files
+!dosl-3.0/planners/AStar.h
+
+# Example programs
+!test_dosl-3.0/minimal_benchmark.cpp
+
