@@ -28,6 +28,7 @@
 # ---------------
 
 !examples-dosl/
+!examples-dosl/makefile
 !examples-dosl/*.h
 !examples-dosl/*.cpp
 
