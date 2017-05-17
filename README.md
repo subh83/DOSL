@@ -91,7 +91,7 @@ Basic Usage (with explanations):
 
 // ==============================================================================
 /* The following class defines the type of a vertex of the graph.
-       Needs to be derived from DOSL-provided template class 'AStarNode<node_type,cost_type>' */
+       Needs to be derived from DOSL-provided class template 'AStarNode<node_type,cost_type>' */
 
 class myNode : public AStarNode<myNode,double>
 {
@@ -115,7 +115,7 @@ public:
 // ==============================================================================
 /* The following class contains the description of the graph (graph connectivity)
        and search problem description (start and stop criteria).
-       Needs to be derived from DOSL-provided template class 'AStarProblem<node_type,cost_type>' */
+       Needs to be derived from DOSL-provided class template 'AStarProblem<node_type,cost_type>' */
 
 class searchProblem : public AStarProblem<myNode,double>
 {
@@ -126,12 +126,16 @@ public:
     searchProblem () { goal_node = myNode(150,100); }
     
     // -----------------------------------------------------------
-    // The following functions are use by 'AStarProblem<nodeType,costType>' class to define graph structure and search parameters
+    // The following functions are use by 'AStarProblem<nodeType,costType>' class to define 
+    //     graph structure and search parameters.
     
     /* Implementation of 'getSuccessors':
-        template <class nodeType, class costType> class AStarProblem 
-            { virtual void getSuccessors (NodeType &n, std::vector<NodeType>* const s, std::vector<CostType>* const c); }
-       Takes in a vertex, n, and returns its neighbors/successors, s, and the costs/distances of the edges, c. */
+         template <class nodeType, class costType> class AStarProblem {
+             virtual void getSuccessors 
+                 (NodeType& n, std::vector<NodeType>* const s, std::vector<CostType>* const s);
+         }
+       Description: Takes in a vertex, n, and returns its neighbors/successors, s, 
+                    and the costs/distances of the edges, c. This defines graph connectivity. */
     
     void getSuccessors (myNode &n, std::vector<myNode>* s, std::vector<double>* c) {
         // This function should account for obstacles, constraints and size of environment.
@@ -164,9 +168,10 @@ public:
     
     /* Implementation of 'stopsearch':
         template <class nodeType, class costType> class AStarProblem 
-            { virtual bool stopsearch (NodeType &n); }
-       Determines when to stop the search.
-       Optional -- If not provided, search will terminate only when heap is empty (all nodes in graph have been expanded). */
+            { virtual bool stopsearch (NodeType& n); }
+       Description: Determines whether to stop the search when 'n' is being expanded.
+       Optional -- If not provided, search will terminate only when heap is empty 
+                   (all nodes in graph have been expanded). */
     
     bool stopsearch (myNode &n) {
         return (n==goal_node);
@@ -202,7 +207,7 @@ int main(int argc, char *argv[])
 Version history:
 ---------------
 
-* Dec 2010: 3.0a released
+* May 2017: 3.1 released
 
 * Discrete Optimal Search Library (DOSL) is a fork of
   the Yet Another Graph-Search Based Planning Library (YAGSBPL)
