@@ -73,10 +73,9 @@
 #define _STAT 0
 
 #define _VIS 1
+#define VIS_INTERVAL 100
 #define VERTEX_COLORS 1
-
-#define SAVE_IMAGE -1
-#define SAVE_IMG_INTERVAL 1000 // 1 //10000
+#define SAVE_IMG_INTERVAL 0 // 0 to not save at all. -1 to save last frame only.
 
 // ---------------------------------------------------
 // derived values
@@ -234,7 +233,7 @@ public:
         
         // saving options
         frameno = 0;
-        imgPrefix << MAKESTR(ALGORITHM) << GRAPH_TYPE << "_";
+        imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "homotopy2d_";
         
         #if _VIS
         image_to_display = my_map.getCvMat (COLOR_MAP);
@@ -444,14 +443,14 @@ public:
                 cvPlotPoint (cv_plot_coord(n.x,n.y), col, PLOT_SCALE);
         }
         
-        if (ExpandCount%SAVE_IMG_INTERVAL == 0  ||  NodeHeap.size() == 0) {
+        if (ExpandCount%VIS_INTERVAL == 0  ||  NodeHeap.size() == 0) {
             cv::imshow("Display window", image_to_display);
             std::cout << std::flush;
-            #if SAVE_IMAGE>0
-            char imgFname[1024];
-            sprintf(imgFname, "outfiles/%s%05d.png", imgPrefix.str().c_str(), ExpandCount);
-            cvSaveImage(imgFname, ipl_image_p);
-            #endif
+            if (SAVE_IMG_INTERVAL>0 && ExpandCount%SAVE_IMG_INTERVAL == 0) {
+                char imgFname[1024];
+                sprintf(imgFname, "outfiles/%s%05d.png", imgPrefix.str().c_str(), ExpandCount);
+                cv::imwrite(imgFname, image_to_display);
+            }
             cvWaitKey(1); //(10);
         }
         
@@ -556,12 +555,11 @@ int main(int argc, char *argv[])
     test_search_problem.clear();
     
     #if _VIS
-    #if SAVE_IMAGE!=0
-    char imgFname[1024];
-    sprintf(imgFname, "outfiles/%s_%s_%s_path.png", test_search_problem.imgPrefix.str().c_str(), 
-                                                    test_search_problem.map_image_fName.c_str(), test_search_problem.expt_Name.c_str());
-    cv::imwrite(imgFname, test_search_problem.image_to_display);
-    #endif
+    if (SAVE_IMG_INTERVAL != 0) {
+        char imgFname[1024];
+        sprintf(imgFname, "outfiles/%s_path.png", test_search_problem.imgPrefix.str().c_str());
+        cv::imwrite(imgFname, test_search_problem.image_to_display);
+    }
     //printf ("\ncomputation time = %f\n", 0.0);
     cvWaitKey();
     #endif

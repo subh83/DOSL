@@ -72,8 +72,9 @@
 
 #define sign(x) ((x>0.0)?1.0:((x<0.0)?-1.0:0.0))
 
-#define SAVE_IMAGE -1
-#define SAVE_IMG_INTERVAL 10 // 10 //10000
+#define _VIS 1
+#define VIS_INTERVAL 10
+#define SAVE_IMG_INTERVAL -1 // 0 to not save at all. -1 to save last frame only.
 #define VERTEX_COLORS 1
 #define DRAW_INITIAL_GRID 1
 
@@ -314,11 +315,13 @@ public:
         
         // Initiation
         frameno = 0;
-        imgPrefix << MAKESTR(ALGORITHM) << GRAPH_TYPE << "_";
+        imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "demo_";
         
         // Draw
+        #if _VIS
         image_to_display.create (ceil( PLOT_SCALE * (MAX_Y - MIN_Y) ), ceil( PLOT_SCALE * (MAX_X - MIN_X) ), CV_8UC3 );
         image_to_display = cv::Scalar(255.0, 255.0, 255.0);
+        #endif
 
         #if GRAPH_TYPE == 8
         const double ystep=1.0, thstep=PI/4.0;
@@ -326,6 +329,7 @@ public:
         const double ystep=SQRT3BY2, thstep=PI/3.0;
         #endif
         
+        #if _VIS
         #if DRAW_INITIAL_GRID
         // all vertices
         cv::Scalar col (255.0, 240.0, 240.0);
@@ -347,6 +351,7 @@ public:
         cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE);
         cv::imshow("Display window", image_to_display);
         cv::waitKey(0);
+        #endif
         
         // Set planner variables
         AllNodesSet.HashTableSize = ceil(MAX_X - MIN_X + 1);
@@ -548,7 +553,9 @@ public:
         tn.put_in_grid();
         if (isNodeAccessible(tn)) { 
             startNodes.push_back (tn);
+            #if _VIS
             cv::circle (image_to_display, cv_plot_coord(tn.x,tn.y), VERTEX_SIZE*PLOT_SCALE, getExpandedNodeeColor(tn), -1, 8);
+            #endif
         }
         
         return (startNodes);
@@ -639,6 +646,7 @@ public:
             return;
                 
         //-------------------------------------------
+        #if _VIS
         if (drawVertex) {
             double nodeRad = radFactor*VERTEX_SIZE;
             cv::circle (image_to_display, cv_plot_coord(n.x,n.y), nodeRad*PLOT_SCALE, col, thickness, 8);
@@ -653,20 +661,21 @@ public:
             }
         }
         
-        if (ExpandCount%SAVE_IMG_INTERVAL == 0  ||  NodeHeap.size() == 0) {
+        if (ExpandCount%VIS_INTERVAL == 0  ||  NodeHeap.size() == 0) {
             cv::imshow("Display window", image_to_display);
             std::cout << std::flush;
-            #if SAVE_IMAGE>0
-            char imgFname[1024];
-            sprintf(imgFname, "outfiles/%s%05d.png", imgPrefix.str().c_str(), ExpandCount);
-            cv::imwrite (imgFname, image_to_display);
-            #endif
+            if (SAVE_IMG_INTERVAL>0 && ExpandCount%SAVE_IMG_INTERVAL == 0) {
+                char imgFname[1024];
+                sprintf(imgFname, "outfiles/%s%05d.png", imgPrefix.str().c_str(), ExpandCount);
+                cv::imwrite (imgFname, image_to_display);
+            }
             cvWaitKey(1); //(10);
         }
         
         if (pauseForVis) {
             // cvWaitKey();
         }
+        #endif
     }
     
     // ---------------------------------------
@@ -707,25 +716,29 @@ int main(int argc, char *argv[])
         }
         allPts.push_back (thisPt);
         printf ("[%f,%f]; ", thisPt.x, thisPt.y);
+        #if _VIS
         cv::line (test_search_problem.image_to_display, 
                 test_search_problem.cv_plot_coord(thisPt.x,thisPt.y), test_search_problem.cv_plot_coord(lastPt.x,lastPt.y), 
                             path_color, 2);
+        #endif
     }
+    #if _VIS
     for (int a=allPts.size()-1; a>=0; --a)
         cv::circle (test_search_problem.image_to_display, 
                 test_search_problem.cv_plot_coord(allPts[a].x,allPts[a].y),
                     test_search_problem.VERTEX_SIZE*test_search_problem.PLOT_SCALE*0.5, cvScalar(255.0,0.0,0.0), -1, 8);
+    #endif
     
     printf("\n");
     cv::imshow("Display window", test_search_problem.image_to_display);
     
     test_search_problem.clear();
     
-    #if SAVE_IMAGE!=0
-    char imgFname[1024];
-    sprintf(imgFname, "outfiles/%spath.png", test_search_problem.imgPrefix.str().c_str());
-    cv::imwrite(imgFname, test_search_problem.image_to_display);
-    #endif
+    if (SAVE_IMG_INTERVAL != 0) {
+        char imgFname[1024];
+        sprintf(imgFname, "outfiles/%s_path.png", test_search_problem.imgPrefix.str().c_str());
+        cv::imwrite(imgFname, test_search_problem.image_to_display);
+    }
     cvWaitKey();
 }
 
