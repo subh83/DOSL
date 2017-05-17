@@ -50,7 +50,7 @@ Coming soon in near future:
 NOTE: Discrete Optimal Search Library (DOSL) is a fork of
       the Yet Another Graph-Search Based Planning Library (YAGSBPL)
       hosted at https://github.com/subh83/YAGSBPL .
-      YAGSBPL is now depreciated.
+      YAGSBPL is now deprecated.
 
 *******************************************************************************
 
@@ -121,10 +121,10 @@ public:
     // The comparison operator must be defined for the node type.
     bool operator==(const myNode& n) const { return (x==n.x && y==n.y); }
     
-    // An efficint hash function for node type is desired, but is optional.
+    // An efficint hash function, 'getHashBin', for node type is desired, but is optional.
     int getHashBin (void) { return (abs(((int)x>>4) + ((int)y<<3) + ((int)x<<4) + ((int)y>>3))); }
     
-    // optional printing function:
+    // optional printing function, 'print':
     void print (std::string head="", std::string tail="") const
             { _dosl_cout << head << "x=" << x << ", y=" << y << _dosl_endl; }
 };
@@ -143,10 +143,10 @@ public:
     searchProblem () { goal_node = myNode(150,100); }
     
     // -----------------------------------------------------------
-    // The following functions are use by 'AStarProblem<nodeType,costType>' class to define 
-    //     graph structure and search parameters.
+    /* The following functions are use by the base class 'AStarProblem<myNode,double>' to determine 
+           graph structure and search parameters. */
     
-    /* Implementation of 'getSuccessors':
+    /* Prototype for 'AStarProblem<>::getSuccessors':
          template <class nodeType, class costType> class AStarProblem {
              virtual void getSuccessors 
                  (NodeType& n, std::vector<NodeType>* const s, std::vector<CostType>* const s);
@@ -169,7 +169,7 @@ public:
             }
     }
     
-    /* Implementation of 'getStartNodes':
+    /* Prototype for 'AStarProblem<>::getStartNodes':
         template <class nodeType, class costType> class AStarProblem 
             { virtual std::vector<NodeType> getStartNodes (void); }
        Returns the list of vertices(s) to start the search with. */
@@ -183,7 +183,7 @@ public:
         return (startNodes);
     }
     
-    /* Implementation of 'stopsearch':
+    /* Prototype for 'AStarProblem<>::stopsearch':
         template <class nodeType, class costType> class AStarProblem 
             { virtual bool stopsearch (NodeType& n); }
        Description: Determines whether to stop the search when 'n' is being expanded.
@@ -228,5 +228,6 @@ Version history:
 
 * Discrete Optimal Search Library (DOSL) is a fork of
   the Yet Another Graph-Search Based Planning Library (YAGSBPL)
-  hosted at https://github.com/subh83/YAGSBPL
+  hosted at https://github.com/subh83/YAGSBPL .
+  YAGSBPL is now deprecated.
 
