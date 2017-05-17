@@ -74,14 +74,22 @@ Running the example programs:
 ```
 (note: you need to `cd` into the `examples-dosl` folder before running the executables)
 
+*******************************************************************************
 
-Output from example program `map2d_path_planning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph:
+Output from example program `map2d_path_planning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph (requires OpenCV):
 
-<p align="center">
-  <img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_10000.png" width="200"/>
-  <img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_30000.png" width="200"/>
-  <img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d__path.png" width="200"/>
-</p>
+<p align="center"><table border=0 width=100%>
+ <tr>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_10000.png" width="200"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_30000.png" width="200"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d__path.png" width="200"/></td>
+ </tr>
+ <tr>
+  <td align="center">10000 vertices expanded</td>
+  <td align="center">30000 vertices expanded</td>
+  <td align="center">Final path</td>
+ </tr>
+</table></p>
 
 
 ******************************************************************************************
