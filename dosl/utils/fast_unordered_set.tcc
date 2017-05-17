@@ -1,13 +1,38 @@
-#ifndef __DOSL_SIMPLE_HASH_
-#define __DOSL_SIMPLE_HASH_
+/** **************************************************************************************
+*                                                                                        *
+*    Part of                                                                             *
+*    Discrete Optimal Search Library (DOSL)                                              *
+*    A template-based C++ library for discrete search                                    *
+*    Version 3.1                                                                         *
+*    ----------------------------------------------------------                          *
+*    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
+*                                                                                        *
+*    This program is free software: you can redistribute it and/or modify                *
+*    it under the terms of the GNU General Public License as published by                *
+*    the Free Software Foundation, either version 3 of the License, or                   *
+*    (at your option) any later version.                                                 *
+*                                                                                        *
+*    This program is distributed in the hope that it will be useful,                     *
+*    but WITHOUT ANY WARRANTY; without even the implied warranty of                      *
+*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                       *
+*    GNU General Public License for more details <http://www.gnu.org/licenses/>.         *
+*                                                                                        *
+*                                                                                        *
+*    Contact:  subhrajit@gmail.com                                                       *
+*              https://www.lehigh.edu/~sub216/ , http://subhrajit.net/                   *
+*                                                                                        *
+*                                                                                        *
+*************************************************************************************** **/
+#ifndef __DOSL_FAST_UNORDERED_SET_TCC
+#define __DOSL_FAST_UNORDERED_SET_TCC
 
 #include <stdio.h>
 #include <vector>
 #include <cstdlib>
 #include <functional>
 
-#include "utils/macros_constants.h"
-#include "utils/misc_wrappers.h"
+#include "macros_constants.tcc"
+#include "misc_wrappers.tcc"
 
 #ifndef _DOSL_HASH_BIN_CHECK
 #define _DOSL_HASH_BIN_CHECK 1
@@ -32,7 +57,7 @@ class fast_unordered_set
 /* 'HashFunctor' should be a class with "int operator()(key const &)" overloaded */
 private:
     // hash function
-    typedef unsigned int (HashFunctor::*HashFunctionPointerType)(key const &);
+    typedef unsigned int (HashFunctor::*HashFunctionPointerType)(key &);
     ExplicitFunctor<HashFunctor, HashFunctionPointerType>  HashFunctorInstance;
     
     // equal-to function
@@ -75,7 +100,7 @@ public:
     // Main interface function
     inline bool empty (void) { return (HashTable==NULL); }
     inline int size() { return (Size); }
-    Key* get (key const & n); // Returns pointer to already-existing item, else creates one
+    Key* get (key & n); // Returns pointer to already-existing item, else creates one
     
     // Clear
     void clear (bool destroyHashTable=false) {
@@ -117,7 +142,7 @@ void fast_unordered_set<key,HashFunctor,EqualToFunctor>::init (void)
 }
 
 template <class key, class HashFunctor, class EqualToFunctor>
-key* fast_unordered_set<key,HashFunctor,EqualToFunctor>::get (key const & n)
+key* fast_unordered_set<key,HashFunctor,EqualToFunctor>::get (key & n)
 {
     if (!HashTable) init();
     

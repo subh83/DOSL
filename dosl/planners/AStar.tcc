@@ -2,10 +2,10 @@
 *                                                                                        *
 *    Part of                                                                             *
 *    Discrete Optimal Search Library (DOSL)                                              *
-*    A template-based C++ library for discrete (graph) search                            *
-*    Version 3.0                                                                         *
+*    A template-based C++ library for discrete search                                    *
+*    Version 3.1                                                                         *
 *    ----------------------------------------------------------                          *
-*    Copyright (C) 2016  Subhrajit Bhattacharya                                          *
+*    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
 *                                                                                        *
 *    This program is free software: you can redistribute it and/or modify                *
 *    it under the terms of the GNU General Public License as published by                *
@@ -18,13 +18,16 @@
 *    GNU General Public License for more details <http://www.gnu.org/licenses/>.         *
 *                                                                                        *
 *                                                                                        *
-*    Contact:  subhrajit@gmail.com ,  http://subhrajit.net/                              *
+*    Contact:  subhrajit@gmail.com                                                       *
+*              https://www.lehigh.edu/~sub216/ , http://subhrajit.net/                   *
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
 
-#ifndef __DOSL_AStar_H
-#define __DOSL_AStar_H
+#ifndef __DOSL_AStar_TCC
+#define __DOSL_AStar_TCC
+// user-readable
+#define DOSL_ALGORITHM_AStar
 
 // includes
 
@@ -36,23 +39,9 @@
 #include <limits>
 #include <type_traits>
 
-#include "utils/macros_constants.h"
+#include "../utils/macros_constants.tcc"
 
 // ====================================================================
-
-#if _DOSL_EVENTHANDLER
-enum AStarNodeEventType {
-    // Expanded: bit 0
-        EXPANDED = 1,
-    // Heap event: bits 1, 2
-        HEAP = 2+4,
-        PUSHED = 2, UPDATED = 4, POPPED = 2+4,
-    // for compatibility with S-star
-        UNEXPANDED = 0
-};
-#endif
-
-// --------------------------------------------------------------------
 
 class LineageDataType
 {
@@ -111,25 +100,19 @@ public:
     // Functions to be overwritten by user node type
     //      (need not be virtual since use is of only derived class members).
     // Need to have virtual members with same name in the problem class.
-    inline int GetHashBin (void) { return (0); }
-    inline void GetSuccessors (std::vector<nodeType>* s, std::vector<CostType>* c) { }
-    inline CostType GetHeuristics (void) { return ((CostType)0.0); }
+    inline int getHashBin (void) { return (0); }
+    inline void getSuccessors (std::vector<nodeType>* s, std::vector<CostType>* c) { }
+    inline CostType getHeuristics (void) { return ((CostType)0.0); }
     inline bool bookmarkNode (void) { return (false); }
-    inline bool stopSearch (void) { return (false); }
+    inline bool stopsearch (void) { return (false); }
     #if _DOSL_EVENTHANDLER
-    /* inline void eventUpdated (void) { }
-    inline void eventExpanded (void) { } */
     void Event (unsigned int e) { }
     #endif
-    #if _DOSL_VERBOSE
-    inline virtual void print (std::string head="", int nTab=0, std::string tail="\n") { 
-        std::cout << head << " (";
-        printf("%x", this);
-        std::cout << ")" << tail;
+    inline void print (std::string head="", std::string tail="") {
+        _dosl_printf(_GREEN "%s (%x) %s" GREEN_, head.c_str(), this, tail.c_str());
     }
-    #endif
     // Derived functions. Can also be directly overwritten.
-    inline CostType GetHeapKey (double subopEps) { return (G + (CostType)(subopEps*GetHeuristics())); }
+    inline CostType getHeapKey (double subopEps) { return (G + (CostType)(subopEps*getHeuristics())); }
 };
 
 
@@ -140,14 +123,27 @@ public:
     typedef costType  CostType;
     typedef nodeType  NodeType;
     
+    // Constants
+    #if _DOSL_EVENTHANDLER
+    enum nodeEventType {
+        // Expanded: bit 0
+            EXPANDED = 1,
+        // Heap event: bits 1, 2
+            HEAP = 2+4,
+            PUSHED = 2, UPDATED = 4, POPPED = 2+4,
+        // for compatibility with S-star
+            UNEXPANDED = 0
+    };
+    #endif
+    
     // parameters for problem
     double SubopEps;
     int ExpandCount;
-    #if _DOSL_VERBOSE
+    // only for verbode:
     int ProgressShowInterval;
+    float timediff;
     clock_t  StartClock;
     time_t StartSecond;
-    #endif
     // Member variables
     std::vector<NodeType> StartNodes;
     std::vector<NodeType*> BookmarkNodePointers;
@@ -158,7 +154,7 @@ public:
     // Heaps
     _DOSL_HEAP <NodeType*, AStarProblem, AStarProblem> NodeHeap;
     bool operator()(NodeType* const & np1, NodeType* const & np2) 
-            { return (GetHeapKey(*np1) < GetHeapKey(*np2)); } // less_than
+            { return (getHeapKey(*np1) < getHeapKey(*np2)); } // less_than
     
     // Constructors and initiators
     AStarProblem () {
@@ -167,58 +163,49 @@ public:
         
         // node hash table
         AllNodesSet.set_equal_to_function (this); // will call this->operator()(const NodeType& n1, const NodeType& n2)
-        AllNodesSet.set_hash_function (this, &AStarProblem::GetHashBin); // will call this->GetHashBin(const NodeType& n)
+        AllNodesSet.set_hash_function (this, &AStarProblem::getHashBin); // will call this->getHashBin(const NodeType& n)
         // node heap
         NodeHeap.set_compare_function (this);
-        NodeHeap.set_heappos_function (this, &AStarProblem::GetNodeHeapPos);
+        NodeHeap.set_heappos_function (this, &AStarProblem::getNodeHeapPos);
         
-        #if _DOSL_VERBOSE
         ProgressShowInterval = 10000;
-        #endif
     }
     
     // Main search functions
-    void Search (void);
-    void Clear (bool clearHeap=true, bool resetNodesInHash=true, unsigned int clearHash=0u);
+    void search (void);
+    void clear (bool clearHeap=true, bool resetNodesInHash=true, unsigned int clearHash=0u);
     
     // Functions for reading paths to arbitrary nodes
-    inline NodeType* GetNodePointer (NodeType n) { return (AllNodesSet.get(n)); }
-    inline CostType GetCostsToNodes (NodeType n) { return (AllNodesSet.get(n)->G); }
-    std::vector<nodeType*> GetPointerPathToNode (nodeType const & n);
+    std::vector < std::unordered_map <nodeType*, costType> > reconstructPath (nodeType n); // for compatibility with SStar
+    std::vector<nodeType*> getPointerPathToNode (nodeType n);
+    // access other node data
+    inline NodeType* getNodePointer (NodeType n) { return (AllNodesSet.get(n)); }
+    inline CostType getCostsToNodes (NodeType n) { return (AllNodesSet.get(n)->G); }
     // bookmark nodes
-    inline std::vector<NodeType*> GetBookmarkNodePointers (void) { return (BookmarkNodePointers); }
-    std::vector<CostType> GetCostsToBookmarkNodes (void);
-    std::vector< std::vector<NodeType*> > GetPointerPathsToBookmarkNodes (void);
-    // for compatibility with s-star:
-    std::vector < std::unordered_map <nodeType*, costType> > ReconstructPath (nodeType const & n);
+    inline std::vector<NodeType*> getBookmarkNodePointers (void) { return (BookmarkNodePointers); }
+    
     
     // -----------------------------------------------------
     // functions to be overwritten by user problem instance.
     // Also in node class
-    inline virtual unsigned int GetHashBin (const NodeType &n) { return (n.GetHashBin()); }
-    inline virtual void GetSuccessors (NodeType &n, std::vector<NodeType>* const s, std::vector<CostType>* const c) 
-            { return (n.GetSuccessors(s,c)); }
-    inline virtual CostType GetHeuristics (NodeType& n) { return (n.GetHeuristics()); }
+    inline virtual unsigned int getHashBin (NodeType &n) { return (n.getHashBin()); }
+    inline virtual void getSuccessors (NodeType &n, std::vector<NodeType>* const s, std::vector<CostType>* const c) 
+                                        { return (n.getSuccessors(s,c)); }
+    inline virtual CostType getHeuristics (NodeType& n) { return (n.getHeuristics()); }
+    inline virtual std::vector<NodeType> getStartNodes (void) { return (std::vector<NodeType>()); }
     inline virtual bool bookmarkNode (NodeType &n) { return (n.bookmarkNode()); }
-    inline virtual bool stopSearch (NodeType &n) { return (n.stopSearch()); }
+    inline virtual bool stopsearch (NodeType &n) { return (n.stopsearch()); }
     #if _DOSL_EVENTHANDLER
-    inline virtual void NodeEvent (NodeType &n, unsigned int e) { n.Event(e); }
+    inline virtual void nodeEvent (NodeType &n, unsigned int e) { n.Event(e); }
     #endif
-    #if _DOSL_VERBOSE
     inline virtual void print (NodeType &n, std::string head) { n.print(head); }
-    #endif
     // Derived functions. Can also be directly overwritten.
-    inline virtual CostType GetHeapKey (NodeType& n) {
-        return (n.G + (CostType)(SubopEps*GetHeuristics(n)));
-        // TODO: Make more efficient by reading 'F'. But be careful about updated G values.
-    }
-    // Specific to searcher class
-    inline virtual std::vector<NodeType> GetStartNodes (void) { return (std::vector<NodeType>()); }
+    inline virtual CostType getHeapKey (NodeType& n) { return (n.G + (CostType)(SubopEps*getHeuristics(n))); }
     
     // -------------------------------------------------
+private:
     // Derived and helper functions
-    int& GetNodeHeapPos (NodeType* const & np) { return (np->nodeHeapPos); }
-    
+    int& getNodeHeapPos (NodeType* const & np) { return (np->nodeHeapPos); }
     void GenerateSuccessors (NodeType* nodeInHash_p);
     
     // Temporary variables
@@ -236,11 +223,11 @@ void AStarProblem<nodeType,costType>::GenerateSuccessors (NodeType* nodeInHash_p
     {
         thisSuccessors.clear();
         thisTransitionCosts.clear();
-        GetSuccessors (*nodeInHash_p, &thisSuccessors, &thisTransitionCosts);
+        getSuccessors (*nodeInHash_p, &thisSuccessors, &thisTransitionCosts);
         
-        #if _DOSL_DEBUG
+        #if _DOSL_DEBUG > 0
         if (thisSuccessors.size()!=thisTransitionCosts.size())
-            _dosl_err("Number of successors (%d) is different from numer of transition costs (%d) as returned by 'GetSuccessors'.", thisSuccessors.size(), thisTransitionCosts.size());
+            _dosl_err("Number of successors (%d) is different from numer of transition costs (%d) as returned by 'getSuccessors'.", thisSuccessors.size(), thisTransitionCosts.size());
         #endif
         
         nodeInHash_p->Successors.reserve (thisSuccessors.size()); // reserve space for fast pushing
@@ -256,21 +243,23 @@ void AStarProblem<nodeType,costType>::GenerateSuccessors (NodeType* nodeInHash_p
 // -------------------------------------------------------------------------------------
 
 template <class nodeType, class costType>
-void AStarProblem<nodeType,costType>::Search (void)
+void AStarProblem<nodeType,costType>::search (void)
 {
-    StartNodes = GetStartNodes();
+    _dosl_verbose_head(1);
     
-    #if _DOSL_DEBUG
+    StartNodes = getStartNodes();
+    
+    #if _DOSL_DEBUG > 0
     if (StartNodes.size()==0)
-        _dosl_err("No start node given! Please define the 'GetStartNodes' function in the problem class.");
+        _dosl_err("No start node given! Please define the 'getStartNodes' function in the problem class.");
     #endif
     
     ExpandCount = 0;
-    #if _DOSL_VERBOSE
-    float timediff = 0.0;
-    StartClock = clock();
-    StartSecond = time(NULL);
-    #endif
+    if (_dosl_verbose_on(0)) {
+        timediff = 0.0;
+        StartClock = clock();
+        StartSecond = time(NULL);
+    }
     
     // Temporary variables
     NodeType* thisNodeInHash_p;
@@ -288,11 +277,11 @@ void AStarProblem<nodeType,costType>::Search (void)
             thisNodeInHash_p->lineageData = LineageDataType(a); // lineage a, generation 0
         thisNodeInHash_p->Expanded = false;
         thisNodeInHash_p->G = (CostType)0.0;
-        thisNodeInHash_p->F = GetHeapKey(*thisNodeInHash_p); // TODO: this is not being used!
+        thisNodeInHash_p->F = getHeapKey(*thisNodeInHash_p); // TODO: this is not being used!
         if (thisNodeInHash_p->nodeHeapPos < 0) { // should not push the same node twice into heap
             NodeHeap.insert (thisNodeInHash_p);
             #if _DOSL_EVENTHANDLER
-            NodeEvent (*thisNodeInHash_p, PUSHED);
+            nodeEvent (*thisNodeInHash_p, PUSHED);
             #endif
         }
         thisNodeInHash_p->PostHashInsertInitiated = true;
@@ -302,29 +291,28 @@ void AStarProblem<nodeType,costType>::Search (void)
     // Main loop
     while (!(NodeHeap.empty()))
     {
-        #if _DOSL_VERBOSE
-        if(ProgressShowInterval>0) {
-            if (ExpandCount % ProgressShowInterval == 0) {
-                if (timediff>=0.0)  timediff = ((float)(clock()-StartClock)) / ((float)CLOCKS_PER_SEC);
-                printf("Number of states Expanded: %d. Heap size: %d. Time elapsed: %F s.\n", 
-                        ExpandCount, NodeHeap.size(), ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
+        if (_dosl_verbose_on(0))
+            if (ProgressShowInterval>0) {
+                if (ExpandCount % ProgressShowInterval == 0) {
+                    if (timediff>=0.0)  timediff = ((float)(clock()-StartClock)) / ((float)CLOCKS_PER_SEC);
+                    _dosl_printf("Number of states Expanded: %d. Heap size: %d. Time elapsed: %F s.", 
+                            ExpandCount, NodeHeap.size(), ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
+                }
             }
-        }
-        #endif
         ExpandCount++;
         
-        // Get the node with least F-value
+        // get the node with least F-value
         thisNodeInHash_p = NodeHeap.pop();
-        #if _DOSL_VERBOSE > 1
-        thisNodeInHash_p->print("Now expanding: ");
-        printf("G-value at expanding node: %f. F-value at expanding node: %f. ", thisNodeInHash_p->G, thisNodeInHash_p->F);
-        #endif
+        if (_dosl_verbose_on(1)) {
+            thisNodeInHash_p->print("Now expanding: ");
+            _dosl_printf("G-value at expanding node: %f. F-value at expanding node: %f.", thisNodeInHash_p->G, thisNodeInHash_p->F);
+        }
         
         // Generate the neighbours if they are already not generated
         GenerateSuccessors (thisNodeInHash_p);
-        #if _DOSL_VERBOSE > 1
-        printf ("Number of successors = %d\n", thisNodeInHash_p->Successors.size());
-        #endif
+        if (_dosl_verbose_on(1)) {
+            _dosl_printf("Number of successors = %d.", thisNodeInHash_p->Successors.size());
+        }
         
         // -----------------------------------------------------
         // Expand
@@ -332,30 +320,29 @@ void AStarProblem<nodeType,costType>::Search (void)
         thisNodeInHash_p->Expanded = true; // Put in closed list
         
         #if _DOSL_EVENTHANDLER
-        NodeEvent (*thisNodeInHash_p, EXPANDED|POPPED);
+        nodeEvent (*thisNodeInHash_p, EXPANDED|POPPED);
         #endif
         
         // Check if we need to bookmark the node being Expanded
         if ( bookmarkNode (*thisNodeInHash_p) )
         {
             BookmarkNodePointers.push_back (thisNodeInHash_p);
-            #if _DOSL_VERBOSE
-            if (timediff>=0.0)  timediff = ((float)(clock()-StartClock)) / ((float)CLOCKS_PER_SEC);
-            thisNodeInHash_p->print ("Bookmarked a node: ");
-            printf("... Number of states expanded: %d. Heap size: %d. Time elapsed: %f s.\n", 
-                    ExpandCount, NodeHeap.size(), ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
-            #endif
-        }
-        // Check if we need to stop furthur expansion
-        if ( stopSearch (*thisNodeInHash_p) ) {
-            #if _DOSL_VERBOSE
-            if (ProgressShowInterval>0) {
+            if (_dosl_verbose_on(0)) {
                 if (timediff>=0.0)  timediff = ((float)(clock()-StartClock)) / ((float)CLOCKS_PER_SEC);
-                thisNodeInHash_p->print ("Stopping search ('stopSearch' returned true) at: ");
-                printf("... Number of states expanded: %d. Heap size: %d. Time elapsed: %f s.\n", 
+                thisNodeInHash_p->print ("Bookmarked a node: ");
+                _dosl_printf("... Number of states expanded: %d. Heap size: %d. Time elapsed: %f s.", 
                         ExpandCount, NodeHeap.size(), ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
             }
-            #endif
+        }
+        // Check if we need to stop furthur expansion
+        if ( stopsearch (*thisNodeInHash_p) ) {
+            if (_dosl_verbose_on(0))
+                if (ProgressShowInterval>0) {
+                    if (timediff>=0.0)  timediff = ((float)(clock()-StartClock)) / ((float)CLOCKS_PER_SEC);
+                    thisNodeInHash_p->print ("Stopping search ('stopsearch' returned true) at: ");
+                    _dosl_printf("... Number of states expanded: %d. Heap size: %d. Time elapsed: %f s.", 
+                            ExpandCount, NodeHeap.size(), ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
+                }
             return;
         }
         
@@ -370,24 +357,29 @@ void AStarProblem<nodeType,costType>::Search (void)
                 thisNeighbourNodeInHash_p->CameFrom = thisNodeInHash_p;
                 thisNeighbourNodeInHash_p->lineageData = thisNodeInHash_p->lineageData.next_generation();
                 thisNeighbourNodeInHash_p->G = thisNodeInHash_p->G + thisTransitionCost;
-                thisNeighbourNodeInHash_p->F = GetHeapKey (*thisNeighbourNodeInHash_p);
+                thisNeighbourNodeInHash_p->F = getHeapKey (*thisNeighbourNodeInHash_p);
                 thisNeighbourNodeInHash_p->Expanded = false;
                 // Put in open list and continue to next neighbour
                 thisNeighbourNodeInHash_p->PostHashInsertInitiated = true;
                                         // ^^^ Always set this when other variables have already been set
                 
-                #if _DOSL_VERBOSE > 1
-                thisNeighbourNodeInHash_p->print("\tChild generated for the first time: ");
-                printf("\t\tTransition cost to child: %f \n", thisTransitionCost);
-                #endif
+                if (_dosl_verbose_on(2)) {
+                    thisNeighbourNodeInHash_p->print("Child (generated for the first time): ");
+                    _dosl_printf("Transition cost to child: %f.", thisTransitionCost);
+                }
                 
                 // push
                 NodeHeap.push (thisNeighbourNodeInHash_p);
                 #if _DOSL_EVENTHANDLER
-                NodeEvent (*thisNeighbourNodeInHash_p, PUSHED);
+                nodeEvent (*thisNeighbourNodeInHash_p, PUSHED);
                 #endif
                 
                 continue;
+            }
+            
+            if (_dosl_verbose_on(2)) {
+                thisNeighbourNodeInHash_p->print("Child (generated previously): ");
+                _dosl_printf("Transition cost to child: %f.", thisTransitionCost);
             }
             
             // Neighbour that is in closed list is to be skipped
@@ -398,29 +390,31 @@ void AStarProblem<nodeType,costType>::Search (void)
             test_g_val = thisNodeInHash_p->G + thisTransitionCost;
             if (test_g_val < thisNeighbourNodeInHash_p->G) {
                 thisNeighbourNodeInHash_p->G = test_g_val;
-                thisNeighbourNodeInHash_p->F = GetHeapKey (*thisNeighbourNodeInHash_p);
+                thisNeighbourNodeInHash_p->F = getHeapKey (*thisNeighbourNodeInHash_p);
                 thisNeighbourNodeInHash_p->CameFrom = thisNodeInHash_p;
                 thisNeighbourNodeInHash_p->lineageData = thisNodeInHash_p->lineageData.next_generation();
                 
                 // Since thisNeighbourGraphNode->F is changed, re-arrange it in heap
                 NodeHeap.update (thisNeighbourNodeInHash_p);
                 #if _DOSL_EVENTHANDLER
-                NodeEvent (*thisNeighbourNodeInHash_p, UPDATED);
+                nodeEvent (*thisNeighbourNodeInHash_p, UPDATED);
                 #endif
             }
         }
     }
-    #if _DOSL_VERBOSE
-    if (ProgressShowInterval>0 && NodeHeap.empty())
-        printf("Stopping search!! Heap is empty... Number of states expanded: %d. Heap size: %d. Time elapsed: %f s.\n", 
-                   ExpandCount, NodeHeap.size(), ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
-    #endif
+    
+    if (_dosl_verbose_on(0)) {
+        if (ProgressShowInterval>0 && NodeHeap.empty()) {
+            _dosl_printf("Stopping search!! Heap is empty... Number of states expanded: %d. Heap size: %d. Time elapsed: %f s.", 
+                       ExpandCount, NodeHeap.size(), ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
+        }
+    }
 }
 
 // -------------------------------------------------------------------------------------
 
 template <class nodeType, class costType>
-void AStarProblem<nodeType,costType>::Clear (bool clearHeap, bool resetNodesInHash, unsigned int clearHash)
+void AStarProblem<nodeType,costType>::clear (bool clearHeap, bool resetNodesInHash, unsigned int clearHash)
 {
     NodeType* thisNodeInHash_p;
     if (clearHeap) NodeHeap.clear();
@@ -441,46 +435,17 @@ void AStarProblem<nodeType,costType>::Clear (bool clearHeap, bool resetNodesInHa
 // For reading results:
 
 template <class nodeType, class costType>
-std::vector< std::vector<nodeType*> > AStarProblem<nodeType,costType>::GetPointerPathsToBookmarkNodes(void)
+std::vector<nodeType*> AStarProblem<nodeType,costType>::getPointerPathToNode (nodeType n)
 {
-    std::vector< std::vector<NodeType*> > paths;
-    std::vector<NodeType*> thisPath;
-    for (auto it = BookmarkNodePointers.begin(); it != BookmarkNodePointers.end(); ++it) {
-        thisPath.clear();
-        // Reconstruct path
-        NodeType* thisNodeInHash_p = *it;
-        while (thisNodeInHash_p) {
-            thisPath.push_back (thisNodeInHash_p);
-            thisNodeInHash_p = thisNodeInHash_p->CameFrom;
-        }
-        paths.push_back(thisPath);
-    }
-    return (paths);
-}
-
-template <class nodeType, class costType>
-std::vector<costType> AStarProblem<nodeType,costType>::GetCostsToBookmarkNodes(void)
-{
-    std::vector<CostType> ret;
-    for (auto it = BookmarkNodePointers.begin(); it != BookmarkNodePointers.end(); ++it)
-        ret.push_back (it->G);
-    return (ret);
-}
-
-template <class nodeType, class costType>
-std::vector<nodeType*> AStarProblem<nodeType,costType>::GetPointerPathToNode (nodeType const & n)
-{
+    _dosl_verbose_head(1);
+        
     std::vector<NodeType*> thisPath;
     // Reconstruct path
     NodeType* thisNodeInHash_p = AllNodesSet.get(n);
-    #if _DOSL_VERBOSE > 1
-    n.print("Reconstruct path called");
-    printf("Node in hash: %x\n", thisNodeInHash_p);
-    #endif
+    if (_dosl_verbose_on(0))  n.print("Reconstruct path called");
+    if (_dosl_verbose_on(1))  _dosl_printf("Node in hash: %x.", thisNodeInHash_p);
     while (thisNodeInHash_p) {
-        #if _DOSL_VERBOSE > 1
-        thisNodeInHash_p->print();
-        #endif
+        if (_dosl_verbose_on(1)) thisNodeInHash_p->print();
         thisPath.push_back (thisNodeInHash_p);
         thisNodeInHash_p = thisNodeInHash_p->CameFrom;
     }
@@ -492,9 +457,9 @@ std::vector<nodeType*> AStarProblem<nodeType,costType>::GetPointerPathToNode (no
 
 template <class nodeType, class costType>
     std::vector < std::unordered_map <nodeType*, costType> >
-        AStarProblem<nodeType,costType>::ReconstructPath (nodeType const & n)
+        AStarProblem<nodeType,costType>::reconstructPath (nodeType n)
 {
-    std::vector<nodeType*> npVec = GetPointerPathToNode (n);
+    std::vector<nodeType*> npVec = getPointerPathToNode (n);
     
     std::vector < std::unordered_map <nodeType*, costType> >  ret;
     for (auto it=npVec.begin(); it!=npVec.end(); ++it) {

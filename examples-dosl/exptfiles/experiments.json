@@ -1,0 +1,9 @@
+{
+   'path_plan_1':
+     {  map_name:  "L457.png",
+        start:     [60, 60],
+        goal:      [200, 300],
+        top_class: 2  }
+
+}
+

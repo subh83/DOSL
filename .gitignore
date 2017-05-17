@@ -4,37 +4,54 @@
 # Except for the following:
 # ========================
 
-# Folders
-!dosl-3.0/
-!dosl-3.0/utils/
-!dosl-3.0/planners/
-!test_dosl-3.0/
+# core files
+# ----------
 
-# Common header files
 !/.gitignore
-!/README.txt
+!/README.md
 !/makefile
-!dosl-3.0/dosl.h
-!dosl-3.0/utils/macros_constants.h
+!/LICENSE
 
-# Basic utils
-!dosl-3.0/utils/basic_math.h
-!dosl-3.0/utils/misc_wrappers.h
+!dosl/
+!dosl/dosl
 
-# Vector implementations
-!dosl-3.0/utils/fast_vector.h
-!dosl-3.0/utils/std_vector.h
+!dosl/utils/
+!dosl/utils/*.hpp
+!dosl/utils/*.tcc
 
-# Unordered set (hash table) implementations
-!dosl-3.0/utils/fast_unordered_set.h
-!dosl-3.0/utils/std_unordered_set.h
+!dosl/planners/
+!dosl/planners/AStar.tcc
 
-# Heap implementations
-!dosl-3.0/utils/binary_heap.h
+# TODO for SStar: Add 'SStar.tcc' planner, add 'metric_simplex_bits' subfolder of utils.
 
-# A-star only files
-!dosl-3.0/planners/AStar.h
+# examples folder
+# ---------------
 
-# Example programs
-!test_dosl-3.0/minimal_benchmark.cpp
+!examples-dosl/
+!examples-dosl/*.h
+!examples-dosl/*.cpp
+
+!examples-dosl/exptfiles/
+!examples-dosl/exptfiles/*.png
+!examples-dosl/exptfiles/*.json
+
+!examples-dosl/outfiles/
+
+!examples-dosl/include/
+!examples-dosl/include/*.h
+!examples-dosl/include/*.hpp
+!examples-dosl/include/*.cpp
+!examples-dosl/include/*.tcc
+
+!examples-dosl/include/*/
+!examples-dosl/include/*/*.h
+!examples-dosl/include/*/*.hpp
+!examples-dosl/include/*/*.cpp
+!examples-dosl/include/*/*.tcc
+
+!examples-dosl/include/*/*/
+!examples-dosl/include/*/*/*.h
+!examples-dosl/include/*/*/*.hpp
+!examples-dosl/include/*/*/*.cpp
+!examples-dosl/include/*/*/*.tcc
 

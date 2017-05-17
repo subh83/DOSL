@@ -3,9 +3,9 @@
 *    Part of                                                                             *
 *    Discrete Optimal Search Library (DOSL)                                              *
 *    A template-based C++ library for discrete search                                    *
-*    Version 3.0                                                                         *
+*    Version 3.1                                                                         *
 *    ----------------------------------------------------------                          *
-*    Copyright (C) 2016  Subhrajit Bhattacharya                                          *
+*    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
 *                                                                                        *
 *    This program is free software: you can redistribute it and/or modify                *
 *    it under the terms of the GNU General Public License as published by                *
@@ -23,11 +23,67 @@
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
+#ifndef __DOSL_BASIC_MATH_TCC_
+#define __DOSL_BASIC_MATH_TCC_
 
-NOTE: Discrete Optimal Search Library (DOSL) is a fork of
-      the Yet Another Graph-Search Based Planning Library (YAGSBPL)
-      hosted at https://github.com/subh83/YAGSBPL
+#include "macros_constants.tcc"
 
-Quick compilation guide:
-    make test
+// ============================================
 
+// Vector operations
+// T = int, double, etc.
+
+#include<vector>
+#include<cmath>
+
+// Vector addition/substraction
+
+template <class T> 
+_DOSL_SMALL_VECTOR<T> operator+ (const _DOSL_SMALL_VECTOR<T>& l, const _DOSL_SMALL_VECTOR<T>& r) {
+    _DOSL_SMALL_VECTOR<T> ret = l;
+    for (int a=0; a<l.size(); ++a)
+        ret[a] += r[a];
+    return (ret);
+}
+
+template <class T> 
+_DOSL_SMALL_VECTOR<T> operator- (const _DOSL_SMALL_VECTOR<T>& l, const _DOSL_SMALL_VECTOR<T>& r) {
+    _DOSL_SMALL_VECTOR<T> ret = l;
+    for (int a=0; a<l.size(); ++a)
+        ret[a] -= r[a];
+    return (ret);
+}
+
+// Scalar multiplication
+
+template <class T> 
+_DOSL_SMALL_VECTOR<T> operator* (const T& l, const _DOSL_SMALL_VECTOR<T>& r) {
+    _DOSL_SMALL_VECTOR<T> ret = r;
+    for (int a=0; a<r.size(); ++a)
+        ret[a] *= l;
+    return (ret);
+}
+
+template <class T> 
+_DOSL_SMALL_VECTOR<T> operator* (const _DOSL_SMALL_VECTOR<T>& l, const T& r) {
+    _DOSL_SMALL_VECTOR<T> ret = l;
+    for (int a=0; a<l.size(); ++a)
+        ret[a] *= r;
+    return (ret);
+}
+
+// Norm
+
+template <class T>
+T norm (const _DOSL_SMALL_VECTOR<T>& v, int p=2) {
+    T ret = ((T)0.0);
+    if (p==2) {
+        for (int a=0; a<v.size(); ++a)
+            ret += v[a]*v[a];
+        return (sqrt(ret));
+    }
+}
+
+// ============================================
+
+#endif
