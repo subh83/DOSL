@@ -37,7 +37,10 @@
 
 int main(int argc, char *argv[])
 {
-    std::string imagefName = "exptfiles/L457.png";
+    std::string program_fName (argv[0]);
+    std::string program_folderName = program_fName.substr(0, program_fName.find_last_of("/\\")+1);
+    
+    std::string imagefName = program_folderName + "exptfiles/L457.png";
     cvParseMap2d my_map = cvParseMap2d (imagefName, true); // setting 'true' for the second parameter computes representative points
     
     // Make changes to the map

@@ -69,14 +69,12 @@ Quick compilation of examples:
 ```
 Running the example programs:
 ```
-    cd examples-dosl
-    ./<program_name>
+    ./examples-dosl/<program_name>
 ```
-(note: you need to `cd` into the `examples-dosl` folder before running the executables)
 
 *******************************************************************************
 
-Output from example program `map2d_path_planning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph (requires OpenCV):
+Output from example program `map2d_PathPlanning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph (requires OpenCV):
 
 <p align="center"><table border=0 width=100%>
  <tr>

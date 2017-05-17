@@ -40,7 +40,7 @@ LIB_ARMADILLO = -larmadillo
 # --------------------------------------------
 
 basic_examples: empty2d_PathPlanning_AStar empty2d_PathPlanning
-cv_examples:    demo2d_path_planning  map2d_path_planning  homotopy2d_path_planning
+cv_examples:    demo2d_PathPlanning  map2d_PathPlanning  homotopy2d_PathPlanning
 
 all_examples: basic_examples cv_examples
 
@@ -55,20 +55,20 @@ empty2d_PathPlanning:
 	@printf $(DOSL_INTRO_STRING)
 	$(CC) $(CFLAGS) $(WARNS) $(INC_LOCAL) $(INC_DOSL) -o $@ $@.cpp $(LIBS) -D_DOSL_ALGORITHM=$(DOSL_ALGORITHM)
 
-.PHONY: demo2d_path_planning
-demo2d_path_planning:
+.PHONY: demo2d_PathPlanning
+demo2d_PathPlanning:
 	@printf "\nNow compiling '$@'...\n"
 	@printf $(DOSL_INTRO_STRING)
 	$(CC) $(CFLAGS) $(WARNS) $(INC_LOCAL) $(INC_DOSL) -o $@ $@.cpp $(LIBS) $(LIBS_OPENCV) -D_DOSL_ALGORITHM=$(DOSL_ALGORITHM)
 
-.PHONY: map2d_path_planning
-map2d_path_planning:
+.PHONY: map2d_PathPlanning
+map2d_PathPlanning:
 	@printf "\nNow compiling '$@'...\n"
 	@printf $(DOSL_INTRO_STRING)
 	$(CC) $(CFLAGS) $(WARNS) $(INC_LOCAL) $(INC_DOSL) -o $@ $@.cpp $(LIBS) $(LIBS_OPENCV) -D_DOSL_ALGORITHM=$(DOSL_ALGORITHM)
 
-.PHONY: homotopy2d_path_planning
-homotopy2d_path_planning:
+.PHONY: homotopy2d_PathPlanning
+homotopy2d_PathPlanning:
 	@printf "\nNow compiling '$@'...\n"
 	@printf $(DOSL_INTRO_STRING)
 	$(CC) $(CFLAGS) $(WARNS) $(INC_LOCAL) $(INC_DOSL) -o $@ $@.cpp $(LIBS) $(LIBS_OPENCV) -D_DOSL_ALGORITHM=$(DOSL_ALGORITHM)
