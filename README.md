@@ -75,6 +75,15 @@ Running the example programs:
 (note: you need to `cd` into the `examples-dosl` folder before running the executables)
 
 
+Output from example program `map2d_path_planning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph:
+
+<p align="center">
+  <img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_10000.png" width="200"/>
+  <img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_30000.png" width="200"/>
+  <img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d__path.png" width="200"/>
+</p>
+
+
 ******************************************************************************************
 
 Basic Usage (with explanations):
