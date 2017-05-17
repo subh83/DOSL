@@ -81,11 +81,13 @@ Output from example program `map2d_path_planning` showing the progress of A* sea
 <p align="center"><table border=0 width=100%>
  <tr>
   <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_10000.png" width="200"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_20000.png" width="200"/></td>
   <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_30000.png" width="200"/></td>
   <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d__path.png" width="200"/></td>
  </tr>
  <tr>
   <td align="center">10000 vertices expanded</td>
+  <td align="center">20000 vertices expanded</td>
   <td align="center">30000 vertices expanded</td>
   <td align="center">Final path</td>
  </tr>
