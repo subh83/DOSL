@@ -234,7 +234,9 @@ int main(int argc, char *argv[])
 Version history:
 ---------------
 
-* May 2017: 3.1 released
+* May 2017: version 3.1 released
+
+* Nov 2016: version 3.0a released
 
 * Discrete Optimal Search Library (DOSL) is a fork of
   the Yet Another Graph-Search Based Planning Library (YAGSBPL)
