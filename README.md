@@ -1,5 +1,8 @@
+Discrete Optimal Search Library (DOSL)
+--------------------------------------
+
 ```
-** **************************************************************************************
+/** **************************************************************************************
 *                                                                                        *
 *    Part of                                                                             *
 *    Discrete Optimal Search Library (DOSL)                                              *
@@ -23,16 +26,17 @@
 *              https://www.lehigh.edu/~sub216/ , http://subhrajit.net/                   *
 *                                                                                        *
 *                                                                                        *
-*************************************************************************************** **
+*************************************************************************************** **/
 ```
 
-Description: "Discrete Optimal Search Library (DOSL)" is a fast, efficient and easy-to-use library for construction of discrete representation (e.g., graph) and search (e.g., using algorithms like A-star, Dijkstra's, etc.) library written in C++, designed specifically for searching medium to large scale graphs for optimal paths. 
+### Description:
+"Discrete Optimal Search Library (DOSL)" is a fast, efficient and easy-to-use library for construction of discrete representation (e.g., graph) and search (e.g., using algorithms like A-star, Dijkstra's, etc.) library written in C++, designed specifically for searching medium to large scale graphs for optimal paths. 
 
-DOSL is designed to be:
+### DOSL is designed to be:
 * Fast (e.g., with integer coordinates for nodes but floating point cost as well as cost function needing to perform floating point operations online, and an average degree of the graph being 8, the library can expand about 150,000 nodes in the graph in just 1 second on a 1.8GHz processor machine with 8GB RAM.)
 * Easy to use (being template-based, defining new arbitrary node-types, cost types, etc. is made easy. For graph connectivity, node accessibility tests, etc, user-defined classes can be used, which makes defining the graph structure very easy, yet highly flexible.) 
 
-DOSL supports:
+### DOSL supports:
 - Directed graphs with complex cost functions.
 - In near future, other forms of discrete representations, such as simplicial complexes, will be supported.
 - On the fly graph construction (i.e. no need to construct and store a complete graph before starting the search/planning process - makes it highly suitable for RRT-like graph construction).
@@ -44,7 +48,7 @@ DOSL supports:
 - Event handling (i.e., call to user-defined functions upon generation, g-score updating or expansion of a node during the search process).
 - Ability to write new planners with much ease. Comes with a weighted A-star (that includes Dijkstra's and normal A-star) planner by default.
 
-Coming soon in near future:
+### Coming soon in near future:
 * New planner with an implementation of the S* search algorithm (https://arxiv.org/abs/1607.07009)
 
 NOTE: Discrete Optimal Search Library (DOSL) is a fork of
@@ -53,6 +57,9 @@ NOTE: Discrete Optimal Search Library (DOSL) is a fork of
       YAGSBPL is now deprecated.
 
 *******************************************************************************
+
+Installation and Compilation of Examples:
+----------------------------------------
 
 Installation:
 DOSL is (to a large extent) template-based.
@@ -91,11 +98,18 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
  </tr>
 </table></p>
 
+******************************************************************************************
+
+Documentation:
+--------------
+
+DOSL wiki is under construction: [DOSL wiki](wiki)
+
 
 ******************************************************************************************
 
 Basic Usage (with explanations):
--------------------------------
+--------------------------------
 ```C++
 // standard headers
 #include <stdio.h>

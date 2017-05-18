@@ -96,6 +96,8 @@ double MAX_X=300.0, MIN_X=-300.0, MAX_Y=300.0, MIN_Y = -300.0;
 std::vector< std::vector<double> > OBS_RECT = { {69.99, -70.01, 170.01, 70.01} };
                                     // Rectangles: {x1, y1, x2, y2}, x1<x2, y1<y2.  add little offset/wiggle
 
+std::string exec_path;
+
 // ==============================================================================
 
 // A node of the graph
@@ -666,7 +668,7 @@ public:
             std::cout << std::flush;
             if (SAVE_IMG_INTERVAL>0 && ExpandCount%SAVE_IMG_INTERVAL == 0) {
                 char imgFname[1024];
-                sprintf(imgFname, "outfiles/%s%05d.png", imgPrefix.str().c_str(), ExpandCount);
+                sprintf(imgFname, "%soutfiles/%s%05d.png", exec_path.c_str(), imgPrefix.str().c_str(), ExpandCount);
                 cv::imwrite (imgFname, image_to_display);
             }
             cvWaitKey(1); //(10);
@@ -691,6 +693,11 @@ public:
 
 int main(int argc, char *argv[])
 {
+    // set some global variables
+    std::string program_fName (argv[0]);
+    exec_path = program_fName.substr(0, program_fName.find_last_of("/\\")+1);
+    
+    // DOSL
     SearchProblem test_search_problem;
     test_search_problem.goalNode = myNode(250*test_search_problem.PROBLEM_SCALE, -150*test_search_problem.PROBLEM_SCALE);
     // Run
@@ -736,7 +743,7 @@ int main(int argc, char *argv[])
     
     if (SAVE_IMG_INTERVAL != 0) {
         char imgFname[1024];
-        sprintf(imgFname, "outfiles/%s_path.png", test_search_problem.imgPrefix.str().c_str());
+        sprintf(imgFname, "%soutfiles/%s_path.png", exec_path.c_str(), test_search_problem.imgPrefix.str().c_str());
         cv::imwrite(imgFname, test_search_problem.image_to_display);
     }
     cvWaitKey();

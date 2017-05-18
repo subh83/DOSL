@@ -171,7 +171,7 @@ class searchProblem : public DOSL_CLASS(Problem)<myNode,double>
 {
 public:
     // Fime names and JSON objects
-    std::string   map_image_fName, expt_fName, expt_folderName, expt_Name;
+    std::string   map_image_fName, expt_fName, expt_folderName, expt_Name, out_folderName;
     JSONcontainer expt_container;
     cvParseMap2d  my_map;
     int nClassesToFind;
@@ -207,9 +207,10 @@ public:
     }
     
     // Constructor
-    searchProblem (std::string expt_f_name, std::string expt_name)
+    searchProblem (std::string expt_f_name, std::string expt_name, std::string out_folder_name)
     {
         expt_fName = expt_f_name; expt_Name = expt_name;
+        out_folderName = out_folder_name;
         expt_folderName = expt_fName.substr(0, expt_fName.find_last_of("/\\")+1);
         
         // Read from file
@@ -448,7 +449,7 @@ public:
             std::cout << std::flush;
             if (SAVE_IMG_INTERVAL>0 && ExpandCount%SAVE_IMG_INTERVAL == 0) {
                 char imgFname[1024];
-                sprintf(imgFname, "outfiles/%s%05d.png", imgPrefix.str().c_str(), ExpandCount);
+                sprintf(imgFname, "%s%s%05d.png", out_folderName.c_str(), imgPrefix.str().c_str(), ExpandCount);
                 cv::imwrite(imgFname, image_to_display);
             }
             cvWaitKey(1); //(10);
@@ -489,13 +490,14 @@ int main(int argc, char *argv[])
         expt_name = argv[2];
     }
     
-    searchProblem test_search_problem (expt_f_name, expt_name);
+    searchProblem test_search_problem (expt_f_name, expt_name, program_folderName+"outfiles/");
     test_search_problem.search();
     
     // -------------------------------------
     #if _STAT
     char statFname[1024];
-    sprintf(statFname, "outfiles/%s_%s.txt", test_search_problem.imgPrefix.str().c_str(), test_search_problem.map_image_fName.c_str());
+    sprintf(statFname, "%s%s_%s.txt", test_search_problem.out_folderName.c_str(), 
+                            test_search_problem.imgPrefix.str().c_str(), test_search_problem.map_image_fName.c_str());
     FILE* pFile;
     pFile = fopen (statFname,"a+");
     if (pFile!=NULL)
@@ -560,7 +562,8 @@ int main(int argc, char *argv[])
     #if _VIS
     if (SAVE_IMG_INTERVAL != 0) {
         char imgFname[1024];
-        sprintf(imgFname, "outfiles/%s_path.png", test_search_problem.imgPrefix.str().c_str());
+        sprintf(imgFname, "%s%s_path.png", test_search_problem.out_folderName.c_str(), 
+                                                test_search_problem.imgPrefix.str().c_str());
         cv::imwrite(imgFname, test_search_problem.image_to_display);
     }
     //printf ("\ncomputation time = %f\n", 0.0);
