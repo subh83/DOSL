@@ -51,10 +51,7 @@ Discrete Optimal Search Library (DOSL)
 ### Coming soon in near future:
 * New planner with an implementation of the S* search algorithm (https://arxiv.org/abs/1607.07009)
 
-NOTE: Discrete Optimal Search Library (DOSL) is a fork of
-      the Yet Another Graph-Search Based Planning Library (YAGSBPL)
-      hosted at https://github.com/subh83/YAGSBPL .
-      YAGSBPL is now deprecated.
+*NOTE:* Discrete Optimal Search Library (DOSL) is a fork of the Yet Another Graph-Search Based Planning Library (YAGSBPL)       hosted at https://github.com/subh83/YAGSBPL . YAGSBPL is now deprecated.
 
 *******************************************************************************
 
@@ -62,19 +59,18 @@ Installation and Compilation of Examples:
 ----------------------------------------
 
 Installation:
-DOSL is (to a large extent) template-based.
-There is nothing to build for the library itself.
-Simply include the file "dosl/dosl" in your code.
+DOSL is (to a large extent) template-based. There is nothing to build for the library itself.
+Simply include the header "dosl/dosl" in your C++ code to use DOSL.
 You can (optionally) install the headers in the system folder by running
 ```
     sudo make install
 ```
 
-Quick compilation of examples:
+Quick compilation of examples in the `examples-dosl` folder:
 ```
     make examples
 ```
-Running the example programs:
+Running an example program:
 ```
     ./examples-dosl/<program_name>
 ```
@@ -103,7 +99,7 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
 Documentation:
 --------------
 
-DOSL wiki is under construction: [DOSL wiki](wiki)
+DOSL wiki is under construction: https://github.com/subh83/DOSL/wiki
 
 
 ******************************************************************************************
