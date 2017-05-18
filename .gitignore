@@ -37,6 +37,7 @@
 !examples-dosl/exptfiles/*.json
 
 !examples-dosl/outfiles/
+!examples-dosl/outfiles/.blank
 
 !examples-dosl/include/
 !examples-dosl/include/*.h
