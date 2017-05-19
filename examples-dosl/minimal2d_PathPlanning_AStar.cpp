@@ -34,6 +34,9 @@
 #define _DOSL_ALGORITHM AStar  // directs DOSL to load the header for 'AStar' planner only
 #include <dosl/dosl>
 
+#define SQRT2 1.41421356237
+const double dists8connected[] = {SQRT2, 1, SQRT2, 1, 1, SQRT2, 1, SQRT2};
+
 // ==============================================================================
 
 // The following class defines the type of a vertex of the graph:
@@ -80,6 +83,7 @@ public:
     void getSuccessors (myNode &n, std::vector<myNode>* s, std::vector<double>* c) {
         // This function should account for obstacles, constraints and size of environment.
         myNode tn;
+        int ct=0;
         for (int a=-1; a<=1; a++)
             for (int b=-1; b<=1; b++) {
                 if (a==0 && b==0) continue;
@@ -87,8 +91,9 @@ public:
                 tn.x = n.x + a;
                 tn.y = n.y + b;
                 
-                s->push_back(tn);
-                c->push_back(sqrt((double)(a*a+b*b))); 
+                s->push_back (tn);
+                c->push_back (dists8connected[ct]); 
+                ++ct;
             }
     }
     

@@ -59,7 +59,7 @@ public:
 
 // To be derived by user node type
 template <class nodeType, class costType=double> // CRTP
-class AStarNode // : public HeapItem<costType>, public HashItem
+class AStarNode
 {
 public:
     typedef costType  CostType;

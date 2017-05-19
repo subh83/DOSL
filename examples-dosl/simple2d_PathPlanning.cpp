@@ -54,22 +54,53 @@
 #include <dosl/dosl>
 
 // ==============================================================================
+// change these:
+#define GRAPH_TYPE 6 // 6 (equilateral triangular grid)  or  8 (uniform square grid)
 
-#ifdef DOSL_ALGORITHM_SStar
+// ==============================================================================
+
+#if defined(DOSL_ALGORITHM_SStar) || GRAPH_TYPE==6
     #define COORD_TYPE double
 #else
     #define COORD_TYPE int
 #endif
+
+#define PIBY3                 1.0471975512
+#define SQRT3BY2              0.86602540378
+#define INFINITESIMAL_DOUBLE  1e-8
+
 
 class myNode : public DOSL_CLASS(Node)<myNode,double> // AStarNode<myNode,double>
 {
 public:
     COORD_TYPE x, y;
     
-    myNode () { }
-    myNode (COORD_TYPE xx, COORD_TYPE yy) : x(xx), y(yy) { }
+    #if GRAPH_TYPE == 8
+        void put_in_grid (void) { }
+    #elif GRAPH_TYPE == 6
+        void put_in_grid (void) {
+            int yLevel = round (y / SQRT3BY2);
+            y = SQRT3BY2*yLevel;
+            if (yLevel%2 == 0) // even
+                x = round(x+INFINITESIMAL_DOUBLE);
+            else
+                x = round(x+0.5+INFINITESIMAL_DOUBLE) - 0.5;
+        }
+    #endif
     
-    bool operator==(const myNode& n) const { return (x==n.x && y==n.y); } // This must be defined for the node
+    // constructors
+    myNode () { }
+    myNode (COORD_TYPE xx, COORD_TYPE yy) : x(xx), y(yy) { put_in_grid(); }
+    
+    // Comparison operator must be defined for the node
+    bool operator==(const myNode& n) const {
+        #if defined(DOSL_ALGORITHM_SStar) || GRAPH_TYPE==6
+        return (fabs(x-n.x)<INFINITESIMAL_DOUBLE  &&  fabs(y-n.y)<INFINITESIMAL_DOUBLE);
+        #else
+        return ((x==n.x) && (y==n.y));
+        #endif
+    }
+    
     void print (std::string head="", std::string tail="") const
             { _dosl_cout << _GREEN << head << "[" << this << "]" GREEN_ " x=" << x << ", y=" << y << _dosl_endl; }
     
@@ -98,11 +129,26 @@ public:
     // Constructors, if any
     //searchProblem () { }
     
+    // user-defined variables
+    myNode goal;
+    
+    // User-defined functions:
+    bool isAccessible (myNode &n) { // used inside 'getSuccessor'
+        // defines an obstacles of radius 50 centered at (75,100)
+        COORD_TYPE dx=n.x-75, dy=n.y-50;
+        return ( dx*dx + dy*dy > 2500 );
+    }
+    
+    // ==============================================================================
+    // The following functions are use by 'AStarProblem<nodeType,costType>' class to define graph sructure and search parameters
+    
     // -----------------------------------------------------------
     
     void getSuccessors (myNode &n, std::vector<myNode>* s, std::vector<double>* c) {
         // This function should account for obstacles and size of environment.
         myNode tn;
+        
+        #if GRAPH_TYPE==8 // uniform square grid
         for (int a=-1; a<=1; a++)
             for (int b=-1; b<=1; b++) {
                 if (a==0 && b==0) continue;
@@ -115,10 +161,27 @@ public:
                 
                 tn.x = n.x + a;
                 tn.y = n.y + b;
-                // TODO
-                s->push_back(tn);
-                c->push_back(sqrt((double)(a*a+b*b))); 
+                
+                if (isAccessible(tn)) {
+                    s->push_back(tn);
+                    c->push_back(sqrt((double)(a*a+b*b)));
+                }
             }
+        
+        #elif GRAPH_TYPE==6 // equilateral triangular grid
+        double th;
+        for (int a=0; a<6; ++a) {
+            th = a * PIBY3;
+            tn.x = n.x + 1.0*cos(th);
+            tn.y = n.y + 1.0*sin(th);
+            
+            if (isAccessible(tn)) {
+                s->push_back(tn);
+                c->push_back(1.0);
+            }
+        }
+        
+        #endif
     }
     
     // -----------------------------------------------------------
@@ -126,7 +189,7 @@ public:
     std::vector<myNode> getStartNodes (void) {
         std::vector<myNode> startNodes;
         for (int a=0; a<1; ++a) {
-            myNode tn (0, 0); // start node
+            myNode tn (-70, -40); // start node
             startNodes.push_back (tn);
         }
         return (startNodes);
@@ -135,7 +198,7 @@ public:
     // -----------------------------------------------------------
     
     bool stopsearch (myNode &n) {
-        return (n.x==150 && n.y==100);
+        return (n==goal);
     }
 };
 
@@ -144,11 +207,11 @@ public:
 int main(int argc, char *argv[])
 {
     searchProblem test_search_problem;
-    test_search_problem.AllNodesSet.set_hash_table_size (8192);
+    test_search_problem.goal = myNode(20,30);
     test_search_problem.search();
     
     // get path
-    std::vector<myNode*> path = test_search_problem.getPointerPathToNode (myNode(150,100));
+    std::vector<myNode*> path = test_search_problem.getPointerPathToNode (test_search_problem.goal);
     
     printf ("\nPath: [ ");
     for (int a=path.size()-1; a>=0; --a) {
