@@ -40,6 +40,7 @@
 #include <type_traits>
 
 #include "../utils/macros_constants.tcc"
+#include "../utils/stl_utils.tcc"
 
 // ====================================================================
 

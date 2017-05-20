@@ -28,7 +28,7 @@
 #include <fstream>
 
 // RSJP header:
-#include "JSONparser.tcc"
+#include "local-include/JSONparser.tcc"
 
 int main(int argc, char *argv[])
 {

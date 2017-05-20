@@ -228,6 +228,23 @@ int main(int argc, char *argv[])
 }
 ```
 
+*******************************************************************************
+
+If you found this library useful in your research, please cite it in your paper as follows:
+
+Suggested citation format:
+_Subhrajit Bhattacharya, "Discrete Optimal Search Library (DOSL): A template-based C++ library for discrete optimal search", 2017. Available at https://github.com/subh83/DOSL ._
+
+Bibtex entry:
+```
+ @misc{dosl,
+     title = {Discrete Optimal Search Library (DOSL): A template-based C++ library for discrete optimal search},
+     author = {Subhrajit Bhattacharya},
+     note = {Available at https://github.com/subh83/DOSL },
+     url = { https://github.com/subh83/DOSL },
+     year = {2017}
+ }
+```
 
 *******************************************************************************
 

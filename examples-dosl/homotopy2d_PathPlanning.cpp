@@ -53,8 +53,8 @@
 #include <dosl/dosl>
 
 // Local libraries/headers
-#include "cvParseMap2d.h"
-#include "JSONparser.tcc"
+#include "local-include/cvParseMap2d.h"
+#include "local-include/JSONparser.tcc"
 
 // =======================
 // Other parameters

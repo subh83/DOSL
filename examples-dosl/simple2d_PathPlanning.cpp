@@ -53,6 +53,7 @@
 #endif
 #include <dosl/dosl>
 
+
 // ==============================================================================
 // change these:
 #define GRAPH_TYPE 6 // 6 (equilateral triangular grid)  or  8 (uniform square grid)
@@ -67,7 +68,7 @@
 
 #define PIBY3                 1.0471975512
 #define SQRT3BY2              0.86602540378
-#define INFINITESIMAL_DOUBLE  1e-8
+#define INFINITESIMAL_DOUBLE  1e-6
 
 
 class myNode : public DOSL_CLASS(Node)<myNode,double> // AStarNode<myNode,double>
@@ -101,22 +102,39 @@ public:
         #endif
     }
     
-    void print (std::string head="", std::string tail="") const
-            { _dosl_cout << _GREEN << head << "[" << this << "]" GREEN_ " x=" << x << ", y=" << y << _dosl_endl; }
+    void print (std::string head="", std::string tail="") {
+        _dosl_cout << _GREEN << head << "[" << this << "]" GREEN_ << "["<< getHashBin() << "]" << " x=" << x << ", y=" << y << _dosl_endl;
+        _dosl_cout << "Successors: " << Successors << _dosl_endl; // Successors is an 'unordered_map'
+    }
     
-    // Functions to be overwritten
-    int getHashBin (void) { return (abs(((int)x>>4) + ((int)y<<3) + ((int)x<<4) + ((int)y>>3))); }
+    // Functions being overwritten
+    int getHashBin (void) {
+        #if GRAPH_TYPE==6
+        /*int xi=((int)round(x/0.5)), yi=((int)round(y/SQRT3BY2));
+        return (abs((xi>>4) + (yi<<3) + (xi<<4) + (yi>>3)));*/
+        return ( MAX(round(fabs(x)+INFINITESIMAL_DOUBLE), round(fabs(x)-INFINITESIMAL_DOUBLE)) );
+        #elif defined(DOSL_ALGORITHM_SStar)
+        int xi=((int)round(x)), yi=((int)round(y));
+        return (abs((xi>>4) + (yi<<3) + (xi<<4) + (yi>>3)));
+        #else
+        return (abs((x>>4) + (y<<3) + (x<<4) + (y>>3)));
+        #endif
+    }
     
     
     #ifdef DOSL_ALGORITHM_SStar
     // + and * operators for convex combination of nodes when using SStar
     
     myNode operator+(const myNode &n) const {
-        return (myNode(x+n.x,y+n.y));
+        myNode tn;
+        tn.x=x+n.x; tn.y=y+n.y;
+        return (tn);
     }
     
     myNode operator*(const double &c) const { // right scalar multiplication
-        return (myNode(x*c,y*c));
+        myNode tn;
+        tn.x=x*c; tn.y=y*c;
+        return (tn);
     }
     #endif
 };
@@ -134,9 +152,8 @@ public:
     
     // User-defined functions:
     bool isAccessible (myNode &n) { // used inside 'getSuccessor'
-        // defines an obstacles of radius 50 centered at (75,100)
-        COORD_TYPE dx=n.x-75, dy=n.y-50;
-        return ( dx*dx + dy*dy > 2500 );
+        // defines an obstacles of radius 20 centered at (0,0)
+        return ( n.x*n.x + n.y*n.y > 400 );
     }
     
     // ==============================================================================
@@ -147,6 +164,7 @@ public:
     void getSuccessors (myNode &n, std::vector<myNode>* s, std::vector<double>* c) {
         // This function should account for obstacles and size of environment.
         myNode tn;
+        // if (~isAccessible(n)) return;
         
         #if GRAPH_TYPE==8 // uniform square grid
         for (int a=-1; a<=1; a++)
