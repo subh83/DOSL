@@ -39,21 +39,21 @@
 !examples-dosl/outfiles/
 !examples-dosl/outfiles/.blank
 
-!examples-dosl/include/
-!examples-dosl/include/*.h
-!examples-dosl/include/*.hpp
-!examples-dosl/include/*.cpp
-!examples-dosl/include/*.tcc
+!examples-dosl/local-include/
+!examples-dosl/local-include/*.h
+!examples-dosl/local-include/*.hpp
+!examples-dosl/local-include/*.cpp
+!examples-dosl/local-include/*.tcc
 
-!examples-dosl/include/*/
-!examples-dosl/include/*/*.h
-!examples-dosl/include/*/*.hpp
-!examples-dosl/include/*/*.cpp
-!examples-dosl/include/*/*.tcc
+!examples-dosl/local-include/*/
+!examples-dosl/local-include/*/*.h
+!examples-dosl/local-include/*/*.hpp
+!examples-dosl/local-include/*/*.cpp
+!examples-dosl/local-include/*/*.tcc
 
-!examples-dosl/include/*/*/
-!examples-dosl/include/*/*/*.h
-!examples-dosl/include/*/*/*.hpp
-!examples-dosl/include/*/*/*.cpp
-!examples-dosl/include/*/*/*.tcc
+!examples-dosl/local-include/*/*/
+!examples-dosl/local-include/*/*/*.h
+!examples-dosl/local-include/*/*/*.hpp
+!examples-dosl/local-include/*/*/*.cpp
+!examples-dosl/local-include/*/*/*.tcc
 
