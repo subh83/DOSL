@@ -230,6 +230,9 @@ int main(int argc, char *argv[])
 
 *******************************************************************************
 
+Citation:
+--------
+
 If you found this library useful in your research, please cite it in your paper as follows:
 
 Suggested citation format:
