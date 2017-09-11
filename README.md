@@ -30,7 +30,28 @@ Discrete Optimal Search Library (DOSL)
 ```
 
 ### Description:
-"Discrete Optimal Search Library (DOSL)" is a fast, efficient and easy-to-use library for construction of discrete representation (e.g., graph) and search (e.g., using algorithms like A-star, Dijkstra's, etc.) library written in C++, designed specifically for searching medium to large scale graphs for optimal paths. 
+"Discrete Optimal Search Library (DOSL)" is a fast, efficient and easy-to-use library for construction of discrete representation (e.g., graph or a simplicial complex) and search (e.g., using algorithms like A-star, Dijkstra's, etc.) library written in C++, designed specifically for searching medium to large scale graphs for optimal paths. 
+
+*******************************************************************************
+
+Output from example program `map2d_PathPlanning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph (requires OpenCV):
+
+<p align="center"><table border=0 width=100%>
+ <tr>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_10000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_20000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_30000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d__path.png" width="180"/></td>
+ </tr>
+ <tr>
+  <td align="center">10000 vertices expanded</td>
+  <td align="center">20000 vertices expanded</td>
+  <td align="center">30000 vertices expanded</td>
+  <td align="center">Final path</td>
+ </tr>
+</table></p>
+
+*******************************************************************************
 
 ### DOSL is designed to be:
 * Fast (e.g., with integer coordinates for nodes but floating point cost as well as cost function needing to perform floating point operations online, and an average degree of the graph being 8, the library can expand about 150,000 nodes in the graph in just 1 second on a 1.8GHz processor machine with 8GB RAM.)
@@ -75,25 +96,6 @@ Then to run an example program:
 ```
     ./bin/<program_name>
 ```
-
-*******************************************************************************
-
-Output from example program `map2d_PathPlanning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph (requires OpenCV):
-
-<p align="center"><table border=0 width=100%>
- <tr>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_10000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_20000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_30000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d__path.png" width="180"/></td>
- </tr>
- <tr>
-  <td align="center">10000 vertices expanded</td>
-  <td align="center">20000 vertices expanded</td>
-  <td align="center">30000 vertices expanded</td>
-  <td align="center">Final path</td>
- </tr>
-</table></p>
 
 ******************************************************************************************
 
