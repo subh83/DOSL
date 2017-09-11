@@ -1,7 +1,7 @@
 /** **************************************************************************************
 *                                                                                        *
 *    Part of                                                                             *
-*    Discrete Optimal Search Library (DOSL)                                              *
+*    Discrete Optimal search Library (DOSL)                                              *
 *    A template-based C++ library for discrete search                                    *
 *    Version 3.x                                                                         *
 *    ----------------------------------------------------------                          *
@@ -23,53 +23,53 @@
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
-#ifndef __DOSL_MAIN_
-#define __DOSL_MAIN_
+#ifndef _DOSL_DOUBLE_UTILS_HPP
+#define _DOSL_DOUBLE_UTILS_HPP
 
-/* *** Helper macro for selecting planner ***
+#include <math.h>
 
-Set 'DOSL_ALGORITHM' before including this file. Otherwise, multiple algorithm files will be included.
-Ex:
-    #define _DOSL_ALGORITHM  AStar
-    #include "dosl.h"
+// ------------------------------------------------------------
+// generic macros
 
-If set, also provides macro 'DOSL_ALGORITHM(str)'
-Ex:
-    DOSL_ALGORITHM(Node)
-expands to
-    AStarNode
+#define isEqual_i(x,y)  ((x)==(y))
+#define isLess_i(x,y)  ((x)<(y)) // x < y
+#define isGreater_i(x,y)  ((x)>(y)) // x > y
+#define isLessEq_i(x,y)  ((x)<=(y)) // x <= y
+#define isGreaterEq_i(x,y)  ((x)>=(y)) // x <= y
 
-Alternatively:
-    _JOIN(_DOSL_ALGORITHM,Node)
-*/
+#define sign(x)    (((x)>0.0)?1.0:(((x)<0.0)?-1.0:0.0))
+#define iround(x)  ((int)round(x))
 
-#define _DOSL_VERSION 3.25
-#include "utils/back_compatibility.hpp"
+// ------------------------------------------------------------
+// relaxed comparisons and other macros (appropriate if x and y take discrete values)
 
-// String joining macro
-#define QJOIN(x, y) x ## y
-#define _JOIN(x, y) QJOIN(x, y)
-
-#define QMAKESTR(x) #x
-#define MAKESTR(x) QMAKESTR(x)
-
-#ifdef _DOSL_ALGORITHM
-    
-    #define EVAL(x) x
-    #define MAKEINC(x) planners/EVAL(x).tcc
-
-    // include:
-    #include MAKESTR(MAKEINC(_DOSL_ALGORITHM))
-    
-#else
-    
-    #define _DOSL_ALGORITHM  UndefinedAlgorithm
-    
-    #include "planners/AStar.tcc"
-    #include "planners/SStar.tcc"
-    #include "planners/ThetaStar.tcc"
-    // TODO: Include other planners
-    
+#ifndef INFINITESIMAL_DOUBLE
+#define INFINITESIMAL_DOUBLE  1e-8
 #endif
+
+#define isEqual_d(x,y)  ( fabs((x)-(y)) < INFINITESIMAL_DOUBLE ) // x == y
+#define isLess_d(x,y)  ( (x)+INFINITESIMAL_DOUBLE < (y) ) // x < y
+#define isGreater_d(x,y)  ( (x) > (y)+INFINITESIMAL_DOUBLE ) // x > y
+#define isLessEq_d(x,y)  (!isGreater_d(x,y)) // x <= y
+#define isGreaterEq_d(x,y)  (!isLess_d(x,y)) // x <= y
+
+#define sign_d(x)   ((isGreater_d((x),0.0))?1.0:((isLess_d((x),0.0))?-1.0:0.0))
+
+// ------------------------------------------------------------
+// math constnts
+#define PI       3.1415926535897931
+#define PI_BY_3  1.0471975511965976
+#define SQRT3BY2 0.8660254037844386
+#define SQRT2    1.4142135623730951
+#define SQRT3    1.7320508075688772
+
+// ------------------------------------------------------------
+// Functions
+
+int approx_floor (double x, double tol=INFINITESIMAL_DOUBLE) {
+    double ret = floor (x);
+    if (ret+1.0-x<tol) ++ret;
+    return ((int)ret);
+}
 
 #endif

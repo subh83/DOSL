@@ -3,7 +3,7 @@
 *    Part of                                                                             *
 *    Discrete Optimal Search Library (DOSL)                                              *
 *    A template-based C++ library for discrete search                                    *
-*    Version 3.1                                                                         *
+*    Version 3.x                                                                         *
 *    ----------------------------------------------------------                          *
 *    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
 *                                                                                        *
@@ -33,6 +33,10 @@
 
 // =================================================
 
+#include <stdio.h>
+#include <string>
+#include <string.h>
+#include <iostream>
 #include<stdexcept>
 #include<string>
 #include <stdarg.h>
@@ -53,12 +57,64 @@
 #define _DOSL_EVENTHANDLER 1
 #endif
 
+
+// print styles codes:
+
+#if _DOSL_PRINT_COLORS
+    #define _PRE "\033["
+    // weights and styles
+    #define _BOLD       _PRE "1m"
+    #define BOLD_        _PRE "21m"
+    //colors
+    #define _RED        _PRE "31m"
+    #define RED_        _PRE "39m"
+    #define _GREEN        _PRE "32m"
+    #define GREEN_        _PRE "39m"
+    #define _YELLOW        _PRE "33m"
+    #define YELLOW_        _PRE "39m"
+    #define _BLUE        _PRE "34m"
+    #define BLUE_        _PRE "39m"
+#else
+    #define _BOLD
+    #define BOLD_
+    #define _PRE
+    #define _RED
+    #define RED_
+    #define _GREEN
+    #define GREEN_
+    #define _YELLOW
+    #define YELLOW_
+    #define _BLUE
+    #define BLUE_
+#endif
+
+
+// Errors and warnings:
+
 #ifndef _dosl_err
-#define _dosl_err(...) { std::cout << std::flush; char tmpstr[1024]; sprintf(tmpstr, __VA_ARGS__); throw std::runtime_error(tmpstr); }
+#define _dosl_err(...) { std::cout << std::flush << _RED _BOLD "ERROR: " BOLD_ ; char tmpstr[1024]; sprintf(tmpstr, __VA_ARGS__); std::cout << RED_ << std::endl; throw std::runtime_error(tmpstr); }
 #endif
 
 #ifndef _dosl_warn
-#define _dosl_warn(...) { std::cout << "WARNING: "; printf(__VA_ARGS__); std::cout << std::flush; }
+#define _dosl_warn(...) { std::cout << std::flush << _YELLOW _BOLD "WARNING: " BOLD_; printf(__VA_ARGS__); std::cout << YELLOW_  << std::endl; }
+#endif
+
+#if _DOSL_DEBUG
+    #ifndef _dosl_warn_once
+        #include <unordered_map>
+        #include <string>
+        std::unordered_map <std::string, int> _dosl_warn_counts;
+        #define _dosl_warn_once(warn_name,...) { \
+            if (_dosl_warn_counts[warn_name]==0) { _dosl_warn(__VA_ARGS__); _dosl_warn_counts[warn_name] = 1; } \
+        }
+        #define _dosl_default_fun_warn(fun_name) { \
+            _dosl_warn_once(fun_name, "Member '" \
+            fun_name "' has not been overwritten. Using default member (this will most likely result in undesirable results)!"); \
+        }
+    #endif
+#else
+     #define _dosl_warn_once(warn_name,...) { }
+     #define _dosl_default_fun_warn(fun_name) { }
 #endif
 
 // =================================================
@@ -151,39 +207,6 @@
 #endif
 
 // =================================================
-
-
-
-
-// ---------------------
-
-#include <stdio.h>
-#include <string>
-#include <string.h>
-#include <iostream>
-
-// print styles codes:
-#if _DOSL_PRINT_COLORS
-    #define _PRE "\033["
-    #define _RED        _PRE "31m"
-    #define RED_        _PRE "39m"
-    #define _GREEN        _PRE "32m"
-    #define GREEN_        _PRE "39m"
-    #define _YELLOW        _PRE "33m"
-    #define YELLOW_        _PRE "39m"
-    #define _BLUE        _PRE "34m"
-    #define BLUE_        _PRE "39m"
-#else
-    #define _PRE
-    #define _RED
-    #define RED_
-    #define _GREEN
-    #define GREEN_
-    #define _YELLOW
-    #define YELLOW_
-    #define _BLUE
-    #define BLUE_
-#endif
 
 // ----------------------------
 
@@ -297,12 +320,16 @@ public:
 
 // ---------------------------
 
-void print_indentation (int relTabs = 0) {
+std::string get_indentation_string (int relTabs = 0) {
     int nTabs = _DOSL_VERBOSE_FUN_DEPTH + relTabs;
     std::string tabStr = "";
     for (int a=0; a<nTabs; ++a)
         tabStr += "\t";
-    std::cout << tabStr;
+    return (tabStr);
+}
+
+void print_indentation (int relTabs = 0) {
+    std::cout << get_indentation_string(relTabs);
 }
 
 /* void increase_indentation (void) { ++GLOBAL_INDENTATION; }
@@ -313,20 +340,51 @@ void decrease_indentation (void) { if (GLOBAL_INDENTATION>0) --GLOBAL_INDENTATIO
 #define DOSL_INDENT    print_indentation();
 #define DOSL_NEWLINE   printf("\n"); print_indentation();
 
+// --
+
+bool _dosl_is_tab_printed = false;
+
 #ifndef _dosl_printf
-#define _dosl_printf(...) { DOSL_INDENT; printf(__VA_ARGS__); std::cout << std::endl; }
+#define _dosl_printf(...) { if(!_dosl_is_tab_printed) DOSL_INDENT; \
+                            printf(__VA_ARGS__); std::cout << std::endl; \
+                            _dosl_is_tab_printed = false; }
 #endif
 
 #ifndef _dosl_printf_nobreak
-#define _dosl_printf_nobreak(...) { DOSL_INDENT; printf(__VA_ARGS__); }
+#define _dosl_printf_nobreak(...) { if(!_dosl_is_tab_printed) { DOSL_INDENT; _dosl_is_tab_printed=true;} \
+                                    printf(__VA_ARGS__); }
 #endif
 
+#ifndef _dosl_linebreak
+#define _dosl_linebreak { printf("\n"); DOSL_INDENT; _dosl_is_tab_printed=true; }
+#endif
+
+// --
+
+/*class TAB_TRACKED_OSTREAM : public std::ostream {
+public:
+    bool isTabPrinted;
+    TAB_TRACKED_OSTREAM (std::ostream oo) : std::ostream(oo) { isTabPrinted= false; }
+};
+
+TAB_TRACKED_OSTREAM _dosl_cout (std::cout); */
+
+/*std::ostream _dosl_cout_ (void) {
+    std::ostream tmp;
+    if (!_dosl_is_tab_printed) { tmp << ; _dosl_is_tab_printed=true;};
+    
+} */
+
 #ifndef _dosl_cout
-#define _dosl_cout  DOSL_INDENT; std::cout 
+#define _dosl_cout  { if(!_dosl_is_tab_printed) { DOSL_INDENT; _dosl_is_tab_printed=true;} } std::cout 
 #endif
 
 #ifndef _dosl_endl
-#define _dosl_endl  std::endl 
+#define _dosl_endl  std::endl; { _dosl_is_tab_printed=false; }
+#endif
+
+#ifndef _dosl_newl
+#define _dosl_newl  std::endl << get_indentation_string()
 #endif
 
 // ----------------------------

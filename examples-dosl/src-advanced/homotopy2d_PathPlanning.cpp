@@ -32,29 +32,22 @@
 
 // Other libraries:
 // Open CV:
-#include <opencv/cv.h>
-#include <opencv/cvaux.h>
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp> 
+#include <opencv2/highgui.hpp> 
 
 // DOSL library
-
-// Optional parameters -- to be declared before including dosl: 
-// #define _DOSL_DEBUG 1                // 0,1, or 2
-// #define _DOSL_AUTOCORRECT 1          // 0 or 1
-// #define _DOSL_VERBOSE_LEVEL 0        // 0 to 5
-// #define _DOSL_VERBOSE_ITEMS "NONE"   // "fun1,fun2" or "NONE" or "ALL"
-           // Common items: "reconstructPath,findCamefromPoint,getAllAttachedMaximalSimplices,getAllMaximalSimplicesFromSet"
-// #define _DOSL_PRINT_COLORS 1
-// #define _DOSL_EVENTHANDLER 1
 
 #ifndef _DOSL_ALGORITHM // can pass at command line during compilation: -D_DOSL_ALGORITHM=AStar
     #define _DOSL_ALGORITHM  AStar
 #endif
+
 #include <dosl/dosl>
 
 // Local libraries/headers
-#include "local-include/cvParseMap2d.h"
-#include "local-include/JSONparser.tcc"
+#include <dosl/aux-utils/cvParseMap2d.hpp>
+#include <dosl/aux-utils/double_utils.hpp>
+#include <dosl/aux-utils/string_utils.hpp> // compute_program_path
+#include "../include-local/RSJparser.tcc"
 
 // =======================
 // Other parameters
@@ -62,12 +55,12 @@
 #define GRAPH_TYPE 6 // 6 or 8
 #define PROB_HMTPY 1
 
-// math macros / constants
+/* // math macros / constants
 #define sign(x) ((x>0.0)?1.0:((x<0.0)?-1.0:0.0))
 #define PI       3.14159265359
 #define PI_BY_3  1.0471975512
 #define SQRT3BY2 0.86602540378
-#define INFINITESIMAL_DOUBLE  1e-6
+#define INFINITESIMAL_DOUBLE  1e-6 */
 
 // output options
 #define _STAT 0
@@ -75,31 +68,18 @@
 #define _VIS 1
 #define VIS_INTERVAL 100
 #define VERTEX_COLORS 1
-#define SAVE_IMG_INTERVAL 0 // 0 to not save at all. -1 to save last frame only.
+#define SAVE_IMG_INTERVAL -1 // 0 to not save at all. -1 to save last frame only.
 
 // ---------------------------------------------------
-// derived values
-#if GRAPH_TYPE==8
-    #define COORD_TYPE int
-#else
-    #define COORD_TYPE double
-#endif
 
-// ==============================================================================
-// helper functions
-
-int approx_floor (double x, double tol=INFINITESIMAL_DOUBLE) {
-    int ret = floor (x);
-    if (ret+1-x<tol) ++ret;
-    return (ret);
-}
+#define COORD_TYPE double
 
 double wiggle = 1e-3;
 
 // ==============================================================================
 
 // A node of the graph
-class myNode : public DOSL_CLASS(Node)<myNode,double>
+class myNode : public _DOSL_ALGORITHM::Node<myNode,double>
 {
 public:
     COORD_TYPE x, y;
@@ -163,16 +143,33 @@ public:
             printf ("%x (%f), ", it->first, it->second);
         std::cout << tail << _dosl_endl;
     }
+    
+    // ---------------------------------------------------------------
+    // Operator overloading for convex combination -- for Path Recnstruction in SStar algorithm
+    
+    myNode operator+(const myNode &b) const { // n1 + n2
+        myNode ret = (*this);
+        ret.x += b.x;
+        ret.y += b.y;
+        return (ret);
+    }
+    
+    myNode operator*(const double &c) const { // n1 * c (right scalar multiplication)
+        myNode ret = (*this);
+        ret.x *= c;
+        ret.y *= c;
+        return (ret);
+    } 
 };
 
 // ==============================================================================
 
-class searchProblem : public DOSL_CLASS(Problem)<myNode,double>
+class searchProblem : public _DOSL_ALGORITHM::Algorithm<myNode,double>
 {
 public:
     // Fime names and JSON objects
     std::string   map_image_fName, expt_fName, expt_folderName, expt_Name, out_folderName;
-    JSONcontainer expt_container;
+    RSJresource expt_container;
     cvParseMap2d  my_map;
     int nClassesToFind;
     
@@ -215,22 +212,31 @@ public:
         
         // Read from file
         std::ifstream my_fstream (expt_fName);
-        expt_container = JSONcontainer (my_fstream)[expt_Name];
-        map_image_fName = expt_folderName + expt_container["map_name"].as<std::string>();
-        my_map = cvParseMap2d (map_image_fName, true); // computes representative points
+        expt_container = RSJresource (my_fstream)[expt_Name];
+        
+        // obstacle map
+        if (expt_container["environment"]["pixmap"].exists()) {
+            map_image_fName = expt_folderName + expt_container["environment"]["pixmap"].as<std::string>();
+            my_map = cvParseMap2d (map_image_fName, true);
+        }
+        else if (expt_container["environment"]["width"].exists() && expt_container["environment"]["height"].exists()) {
+            my_map = cvParseMap2d (cv::Mat (expt_container["environment"]["height"].as<int>(), 
+                                            expt_container["environment"]["width"].as<int>(),
+                                                            CV_8UC3, cv::Scalar(255,255,255)), true);
+        }
         
         // read data for planning
         MAX_X=my_map.width(); MIN_X=0; MAX_Y=my_map.height(); MIN_Y=0;
         startNode = myNode (expt_container["start"][0].as<int>(), expt_container["start"][1].as<int>());
         goalNode = myNode (expt_container["goal"][0].as<int>(), expt_container["goal"][1].as<int>());
         startNode.put_in_grid(); goalNode.put_in_grid(); 
-        nClassesToFind = expt_container["top_class"].as<int>();
+        nClassesToFind = expt_container["top_class"].as<int>(2);
         nClasses = 0;
         
         // display options
-        PLOT_SCALE = 2.0;
-        VERTEX_SIZE = 1.0;
-        LINE_THICKNESS = 4.0; // CV_FILLED
+        PLOT_SCALE = expt_container["plot_options"]["plot_scale"].as<double>(1.0);
+        VERTEX_SIZE = expt_container["plot_options"]["vertex_size"].as<double>(1.0);
+        LINE_THICKNESS = expt_container["plot_options"]["line_thickness"].as<double>(2.0); // CV_FILLED
         
         // saving options
         frameno = 0;
@@ -251,7 +257,7 @@ public:
     // -----------------------------------------------------------
     
     bool isNodeInWorkspace (const myNode& tn) {
-        if ( tn.x<MIN_X || tn.x>MAX_X || tn.y<MIN_Y || tn.y>MAX_Y )  return (false);
+        if ( tn.x<MIN_X || tn.x>=MAX_X || tn.y<MIN_Y || tn.y>=MAX_Y )  return (false);
         return (true);
     }
     
@@ -397,12 +403,6 @@ public:
         
         // --------------------------------------------
         if (e & EXPANDED) {
-            // ++++++++++++++++++++++++++++++++++++++++++++++++++++
-            // Testing specific vertices
-            /* if (fabs(n.x-172.0)<0.01 && fabs(n.y-98.7269)<0.01)
-                RUNTIME_VERBOSE_SWITCH = 1; */
-            // ++++++++++++++++++++++++++++++++++++++++++++++++++++
-            
             lastExpanded = n;
             bool cameFromNull = false;
             #ifdef DOSL_ALGORITHM_SStar
@@ -463,7 +463,7 @@ public:
     
     // ---------------------------------------
     
-    bool stopsearch (myNode &n) {
+    bool stopSearch (myNode &n) {
         if (n.isCoordsEqual(goalNode)) {
             homotopyGoals.push_back (n);
             ++nClasses;
@@ -480,17 +480,22 @@ public:
 int main(int argc, char *argv[])
 {
     //RUNTIME_VERBOSE_SWITCH = 0;
+    compute_program_path();
     
-    std::string program_fName (argv[0]);
-    std::string program_folderName = program_fName.substr(0, program_fName.find_last_of("/\\")+1);
-    
-    std::string expt_f_name=program_folderName+"exptfiles/experiments.json", expt_name="path_plan_1";
-    if (argc > 1) {
+    std::string expt_f_name = program_path+"../files-expt/basic_experiments.json", expt_name="L457_expt1";
+    if (argc == 2) {
+        expt_name = argv[1];
+    }
+    else if (argc > 2) {
         expt_f_name = argv[1];
         expt_name = argv[2];
     }
     
-    searchProblem test_search_problem (expt_f_name, expt_name, program_folderName+"outfiles/");
+    printf (_BOLD _YELLOW "Note: " YELLOW_ BOLD_ "Using algorithm " _YELLOW  MAKESTR(_DOSL_ALGORITHM)  YELLOW_ 
+                ". Run 'make' to recompile with a different algorithm.\n"
+                "Note: This program currently does not support 'ThetaStar' algorithm.\n");
+    
+    searchProblem test_search_problem (expt_f_name, expt_name, program_path+"../files-out/");
     test_search_problem.search();
     
     // -------------------------------------

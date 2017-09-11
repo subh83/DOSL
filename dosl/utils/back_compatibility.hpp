@@ -3,9 +3,9 @@
 *    Part of                                                                             *
 *    Discrete Optimal Search Library (DOSL)                                              *
 *    A template-based C++ library for discrete search                                    *
-*    Version 3.x                                                                         *
+*    Version 3.1                                                                         *
 *    ----------------------------------------------------------                          *
-*    Copyright (C) 2016  Subhrajit Bhattacharya                                          *
+*    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
 *                                                                                        *
 *    This program is free software: you can redistribute it and/or modify                *
 *    it under the terms of the GNU General Public License as published by                *
@@ -23,53 +23,16 @@
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
-#ifndef __DOSL_MAIN_
-#define __DOSL_MAIN_
+#ifndef __DOSL_BACK_COMP_HPP
+#define __DOSL_BACK_COMP_HPP
 
-/* *** Helper macro for selecting planner ***
-
-Set 'DOSL_ALGORITHM' before including this file. Otherwise, multiple algorithm files will be included.
-Ex:
-    #define _DOSL_ALGORITHM  AStar
-    #include "dosl.h"
-
-If set, also provides macro 'DOSL_ALGORITHM(str)'
-Ex:
-    DOSL_ALGORITHM(Node)
-expands to
-    AStarNode
-
-Alternatively:
-    _JOIN(_DOSL_ALGORITHM,Node)
-*/
-
-#define _DOSL_VERSION 3.25
-#include "utils/back_compatibility.hpp"
-
-// String joining macro
-#define QJOIN(x, y) x ## y
-#define _JOIN(x, y) QJOIN(x, y)
-
-#define QMAKESTR(x) #x
-#define MAKESTR(x) QMAKESTR(x)
-
-#ifdef _DOSL_ALGORITHM
-    
-    #define EVAL(x) x
-    #define MAKEINC(x) planners/EVAL(x).tcc
-
-    // include:
-    #include MAKESTR(MAKEINC(_DOSL_ALGORITHM))
-    
-#else
-    
-    #define _DOSL_ALGORITHM  UndefinedAlgorithm
-    
-    #include "planners/AStar.tcc"
-    #include "planners/SStar.tcc"
-    #include "planners/ThetaStar.tcc"
-    // TODO: Include other planners
-    
-#endif
+// v3.1 -> 3.2
+#define AStarNode               AStar::Node
+#define AStarProblem            AStar::Algorithm
+#define SStarNode               SStar::Node
+#define SStarProblem            SStar::Algorithm
+#define ThetaStarNode           ThetaStar::Node
+#define ThetaStarProblem        ThetaStar::Algorithm
+#define getPointerPathToNode    reconstructPointerPath
 
 #endif

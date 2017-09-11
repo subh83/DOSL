@@ -1,9 +1,9 @@
 /** **************************************************************************************
 *                                                                                        *
-*    A Ridiculously Simple JSON Parser for C++ (RSJP-cpp)                                *
-*    Version 1.0a                                                                        *
+*    A Ridiculously Simple JSON parser for C++ (RSJp-cpp)                                *
+*    Version 1.0b                                                                        *
 *    ----------------------------------------------------------                          *
-*    Copyright (C) 2016  Subhrajit Bhattacharya                                          *
+*    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
 *                                                                                        *
 *    This program is free software: you can redistribute it and/or modify                *
 *    it under the terms of the GNU General Public License as published by                *
@@ -22,8 +22,8 @@
 *                                                                                        *
 *************************************************************************************** **/
 
-#ifndef __DOSL_JSONPARSE_TCC
-#define __DOSL_JSONPARSE_TCC
+#ifndef __DOSL_RSJPARSE_TCC
+#define __DOSL_RSJPARSE_TCC
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,49 +33,70 @@
 #include <iostream>
 
 
-char* JSONobjectbrackets = "{}";
-char* JSONarraybrackets = "[]";
-char JSONobjectassignment = ':';
-char JSONarraydelimiter = ',';
+char const* RSJobjectbrackets = "{}";
+char const* RSJarraybrackets = "[]";
+char RSJobjectassignment = ':';
+char RSJarraydelimiter = ',';
 
-std::vector<char*> JSONbrackets = {JSONobjectbrackets, JSONarraybrackets};
-std::vector<char*> JSONcontainerquotes = {"\"\"", "''"};
-char JSONcharescape = '\\';
+std::vector<char const*> RSJbrackets = {RSJobjectbrackets, RSJarraybrackets};
+std::vector<char const*> RSJstringquotes = {"\"\"", "''"};
+char RSJcharescape = '\\';
+
+std::string RSJlinecommentstart = "//";
 
 // ============================================================
 
-class JSONcontainer;
-/* Use: JSONcontainer("JSON_string_data").as<JSONobject>()["keyName"].as<JSONarray>()[2].as<int>()
-        JSONcontainer("JSON_string_data")["keyName"][2].as<int>()  */
+class RSJresource;
+/* Use: RSJresource("RSJ_string_data").as<RSJobject>()["keyName"].as<RSJarray>()[2].as<int>()
+        RSJresource("RSJ_string_data")["keyName"][2].as<int>()  */
 
 // Helper preprocessor directives
-#define jsonObject  as<JSONobject>()
-#define jsonArray   as<JSONarray>()
-#define jsonAs(t)   as<t>()
+#define rsjObject  as<RSJobject>()
+#define rsjArray   as<RSJarray>()
+#define rsjAs(t)   as<t>()
 
-typedef std::map <std::string,JSONcontainer>    JSONobject;
-typedef std::vector <JSONcontainer>             JSONarray;
+typedef std::map <std::string,RSJresource>    RSJobject;
+typedef std::vector <RSJresource>             RSJarray;
 
-class JSONcontainer {
-public:
+class RSJresource {
+private:
+    // main data
     std::string data; // can be object, vector or leaf data
+    bool _exists;      // whether the RSJ resource exists.
     
-    JSONcontainer () { }
-    JSONcontainer (std::string str) : data (str) { }
-    JSONcontainer (std::istream& is) {
-        data = std::string ( (std::istreambuf_iterator<char>(is)), (std::istreambuf_iterator<char>()) );
+    // parsed data
+    RSJobject parsed_obj;
+    RSJarray parsed_array;
+    
+public:
+    // constructor
+    RSJresource () : _exists (false) { } // no data field.
+    
+    RSJresource (std::string str) : data (str), _exists (true) {
+        if (data.empty()) _exists = false;
+        else _exists = true;
     }
     
+    RSJresource (std::istream& is) {
+        data = std::string ( (std::istreambuf_iterator<char>(is)), (std::istreambuf_iterator<char>()) );
+        if (data.empty()) _exists = false;
+        else _exists = true;
+    }
+    
+    // access raw data
+    std::string& raw_data (void) { return (data); }
+    bool exists (void) { return (_exists); }
+    
+    // as
     template <class dataType>
-    dataType as (void) { // specialized outside class declaration
+    dataType as (const dataType& def = dataType()) { // specialized outside class declaration
+        if (!exists()) return (def);
         return dataType (data); // default behavior for unknown types: invoke 'dataType(std::string)'
     }
     
-    // parsed data and opertor[]
-    JSONobject parsed_obj;
-    JSONcontainer& operator[] (std::string key);
-    JSONarray parsed_array;
-    JSONcontainer& operator[] (int indx);
+    // opertor[]
+    RSJresource& operator[] (std::string key); // object
+    RSJresource& operator[] (int indx); // array
 };
 
 // ============================================================
@@ -117,14 +138,14 @@ std::string strip_outer_quotes (std::string str, char* qq=NULL) {
 
 // ----------------
 
-int is_bracket (char c, std::vector<char*>& bracks, int indx=0) {
+int is_bracket (char c, std::vector<char const*>& bracks, int indx=0) {
     for (int b=0; b<bracks.size(); ++b)
         if (c==bracks[b][indx]) 
             return (b);
     return (-1);
 }
 
-std::vector<std::string> split_JSON_array (std::string str) {
+std::vector<std::string> split_RSJ_array (std::string str) {
     // splits, while respecting brackets and escapes
     std::vector<std::string> ret;
     
@@ -137,7 +158,7 @@ std::vector<std::string> split_JSON_array (std::string str) {
     for (int a=0; a<str.length(); ++a) { // *
         
         // delimiter
-        if ( bracket_stack.size()==0  &&  quote_stack.size()==0  &&  str[a]==JSONarraydelimiter ) {
+        if ( bracket_stack.size()==0  &&  quote_stack.size()==0  &&  str[a]==RSJarraydelimiter ) {
             ret.push_back (current);
             current.clear(); bracket_stack.clear(); quote_stack.clear(); escape_active = false;
             continue; // to *
@@ -147,9 +168,9 @@ std::vector<std::string> split_JSON_array (std::string str) {
         // checks for string
         
         if (quote_stack.size() > 0) { // already inside string
-            if (str[a]==JSONcharescape)  // an escape character
+            if (str[a]==RSJcharescape)  // an escape character
                 escape_active = !escape_active;
-            else if (!escape_active  &&  str[a]==JSONcontainerquotes[quote_stack.back()][1] ) { // close quote
+            else if (!escape_active  &&  str[a]==RSJstringquotes[quote_stack.back()][1] ) { // close quote
                 quote_stack.pop_back();
                 escape_active = false;
             }
@@ -161,7 +182,7 @@ std::vector<std::string> split_JSON_array (std::string str) {
         }
         
         if (quote_stack.size()==0) { // check for start of string
-            if ((bi = is_bracket (str[a], JSONcontainerquotes)) >= 0) {
+            if ((bi = is_bracket (str[a], RSJstringquotes)) >= 0) {
                 quote_stack.push_back (bi);
                 current.push_back (str[a]);
                 continue; // to *
@@ -169,15 +190,35 @@ std::vector<std::string> split_JSON_array (std::string str) {
         }
         
         // ------------------------------------
+        // checks for comments
+        
+        if (quote_stack.size()==0) { // comment cannot start inside string
+            
+            // single-line commenst
+            if (str.compare (a, RSJlinecommentstart.length(), RSJlinecommentstart) == 0) {
+                // ignore until end of line
+                int newline_pos = str.find ("\n", a);
+                if (newline_pos == std::string::npos)
+                    newline_pos = str.find ("\r", a);
+                
+                if (newline_pos != std::string::npos)
+                    a = newline_pos; // point to the newline character (a will be incremented)
+                else // the comment continues until EOF
+                    a = str.length();
+                continue;
+            }
+        }
+        
+        // ------------------------------------
         // checks for brackets
         
-        if ( bracket_stack.size()>0  &&  str[a]==JSONbrackets[bracket_stack.back()][1] ) { // check for closing bracket
+        if ( bracket_stack.size()>0  &&  str[a]==RSJbrackets[bracket_stack.back()][1] ) { // check for closing bracket
             bracket_stack.pop_back();
             current.push_back (str[a]);
             continue;
         }
         
-        if ((bi = is_bracket (str[a], JSONbrackets)) >= 0) {
+        if ((bi = is_bracket (str[a], RSJbrackets)) >= 0) {
             bracket_stack.push_back (bi);
             current.push_back (str[a]);
             continue; // to *
@@ -198,50 +239,54 @@ std::vector<std::string> split_JSON_array (std::string str) {
 // ============================================================
 // Specialized .as() member functions
 
-// JSONobject
+// RSJobject
 template <>
-std::map <std::string,JSONcontainer>  JSONcontainer::as<JSONobject> (void) {
-    std::map <std::string,JSONcontainer> ret;
+std::map <std::string,RSJresource>  RSJresource::as<RSJobject> (const RSJobject& def) {
+    if (!exists()) return (def);
     
-    std::string content = strtrim (strtrim (data, " {", "l" ), " }", "r" );
+    std::map <std::string,RSJresource> ret;
+    std::string content = strtrim (strtrim (strtrim(data), " {", "l" ), " }", "r" );
     
-    std::vector<std::string> nvPairs = split_JSON_array (content);
+    std::vector<std::string> nvPairs = split_RSJ_array (content);
     for (int a=0; a<nvPairs.size(); ++a) {
-        std::size_t assignmentPos = nvPairs[a].find (JSONobjectassignment);
+        std::size_t assignmentPos = nvPairs[a].find (RSJobjectassignment);
         ret.insert (make_pair( 
                             strip_outer_quotes (nvPairs[a].substr (0,assignmentPos) ) ,
-                            JSONcontainer (strtrim (nvPairs[a].substr (assignmentPos+1) ) )
+                            RSJresource (strtrim (nvPairs[a].substr (assignmentPos+1) ) )
                    ) );
     }
     
     return (ret);
 }
 
-JSONcontainer& JSONcontainer::operator[] (std::string key) {
+RSJresource& RSJresource::operator[] (std::string key) {
     if (parsed_obj.empty())
-        parsed_obj = as<JSONobject>();
-    return (parsed_obj[key]);
+        parsed_obj = as<RSJobject>();
+    return (parsed_obj[key]); // will return empty resource if key does not exist
 }
 
 // ------------------------------------
 
-// JSONarray
+// RSJarray
 template <>
-std::vector <JSONcontainer>  JSONcontainer::as<JSONarray> (void) {
-    std::vector <JSONcontainer> ret;
+std::vector <RSJresource>  RSJresource::as<RSJarray> (const RSJarray& def) {
+    if (!exists()) return (def);
     
-    std::string content = strtrim (strtrim (data, " [", "l" ), " ]", "r" );
+    std::vector <RSJresource> ret;
+    std::string content = strtrim (strtrim (strtrim(data), " [", "l" ), " ]", "r" );
     
-    std::vector<std::string> nvPairs = split_JSON_array (content);
+    std::vector<std::string> nvPairs = split_RSJ_array (content);
     for (int a=0; a<nvPairs.size(); ++a) 
-        ret.push_back (JSONcontainer (strtrim (nvPairs[a]) ) );
+        ret.push_back (RSJresource (strtrim (nvPairs[a]) ) );
     
     return (ret);
 }
 
-JSONcontainer& JSONcontainer::operator[] (int indx) {
+RSJresource& RSJresource::operator[] (int indx) {
     if (parsed_array.empty())
-        parsed_array = as<JSONarray>();
+        parsed_array = as<RSJarray>();
+    if (indx>=parsed_array.size())
+        parsed_array.resize(indx+1); // insert empty resources
     return (parsed_array[indx]);
 }
 
@@ -249,7 +294,9 @@ JSONcontainer& JSONcontainer::operator[] (int indx) {
 
 // String
 template <>
-std::string  JSONcontainer::as<std::string> (void) {
+std::string  RSJresource::as<std::string> (const std::string& def) {
+    if (!exists()) return (def);
+    
     char qq = '\0';
     std::string ret = strip_outer_quotes (data, &qq);
     
@@ -270,19 +317,22 @@ std::string  JSONcontainer::as<std::string> (void) {
 
 // integer
 template <>
-int  JSONcontainer::as<int> (void) {
+int  RSJresource::as<int> (const int& def) {
+    if (!exists()) return (def);
     return (atoi (strip_outer_quotes(data).c_str() ) );
 }
 
 // double
 template <>
-double  JSONcontainer::as<double> (void) {
+double  RSJresource::as<double> (const double& def) {
+    if (!exists()) return (def);
     return (atof (strip_outer_quotes(data).c_str() ) );
 }
 
 // bool
 template <>
-bool  JSONcontainer::as<bool> (void) {
+bool  RSJresource::as<bool> (const bool& def) {
+    if (!exists()) return (def);
     std::string cleanData = strip_outer_quotes (data);
     if (cleanData=="true" || cleanData=="TRUE" || cleanData=="True" || atoi(cleanData.c_str())!=0) return (true);
     return (false);

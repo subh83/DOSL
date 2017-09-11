@@ -17,10 +17,34 @@ install:
 	find $(DOSL_FOLDER)/dosl -type d -exec chmod 755 {} \;
 	find $(DOSL_FOLDER)/dosl -type f -exec chmod 644 {} \;
 
+.PHONY: uninstall
+uninstall:
+	rm -rf $(DOSL_FOLDER)/dosl
+
+# --------------------------------------------
+# Examples
+
 .PHONY: examples
 examples:
 	cd examples-dosl && make all
 
-.PHONY: uninstall
-uninstall:
-	rm -rf $(DOSL_FOLDER)/dosl
+.PHONY: examples-test
+examples-test:
+	cd examples-dosl && make test
+
+.PHONY: examples-simple
+examples-simple:
+	cd examples-dosl && make simple
+
+.PHONY: examples-advanced
+examples-advanced:
+	cd examples-dosl && make advanced
+
+.PHONY: examples-run
+examples-run:
+	cd examples-dosl && make clean
+
+.PHONY: examples-clean
+examples-clean:
+	cd examples-dosl && make clean
+

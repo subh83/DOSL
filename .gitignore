@@ -19,41 +19,66 @@
 !dosl/utils/*.hpp
 !dosl/utils/*.tcc
 
-!dosl/planners/
-!dosl/planners/AStar.tcc
+!dosl/utils/*/
+!dosl/utils/*/*.hpp
+!dosl/utils/*/*.tcc
 
-# TODO for SStar: Add 'SStar.tcc' planner, add 'metric_simplex_bits' subfolder of utils.
+!dosl/aux-utils/
+!dosl/aux-utils/*.hpp
+!dosl/aux-utils/*.tcc
+
+!dosl/encapsulations/
+!dosl/encapsulations/*.hpp
+!dosl/encapsulations/*.tcc
+
+!dosl/planners/
+!dosl/planners/*.tcc
+!dosl/planners/*.hpp
 
 # examples folder
 # ---------------
 
 !examples-dosl/
 !examples-dosl/makefile
-!examples-dosl/*.h
-!examples-dosl/*.cpp
 
-!examples-dosl/exptfiles/
-!examples-dosl/exptfiles/*.png
-!examples-dosl/exptfiles/*.json
+!examples-dosl/src-test/
+!examples-dosl/src-test/*.cpp
 
-!examples-dosl/outfiles/
-!examples-dosl/outfiles/.blank
+!examples-dosl/src-simple/
+!examples-dosl/src-simple/*.cpp
 
-!examples-dosl/local-include/
-!examples-dosl/local-include/*.h
-!examples-dosl/local-include/*.hpp
-!examples-dosl/local-include/*.cpp
-!examples-dosl/local-include/*.tcc
+!examples-dosl/src-advanced/
+!examples-dosl/src-advanced/*.cpp
 
-!examples-dosl/local-include/*/
-!examples-dosl/local-include/*/*.h
-!examples-dosl/local-include/*/*.hpp
-!examples-dosl/local-include/*/*.cpp
-!examples-dosl/local-include/*/*.tcc
+!examples-dosl/files-expt/
+!examples-dosl/files-expt/*.png
+!examples-dosl/files-expt/*.json
 
-!examples-dosl/local-include/*/*/
-!examples-dosl/local-include/*/*/*.h
-!examples-dosl/local-include/*/*/*.hpp
-!examples-dosl/local-include/*/*/*.cpp
-!examples-dosl/local-include/*/*/*.tcc
+!examples-dosl/files-out/
+!examples-dosl/files-out/.blank
+
+!examples-dosl/bin/
+!examples-dosl/bin/.blank
+
+!examples-dosl/python/
+!examples-dosl/python/*.py
+
+
+!examples-dosl/include-local/
+!examples-dosl/include-local/*.h
+!examples-dosl/include-local/*.hpp
+!examples-dosl/include-local/*.cpp
+!examples-dosl/include-local/*.tcc
+
+!examples-dosl/include-local/*/
+!examples-dosl/include-local/*/*.h
+!examples-dosl/include-local/*/*.hpp
+!examples-dosl/include-local/*/*.cpp
+!examples-dosl/include-local/*/*.tcc
+
+!examples-dosl/include-local/*/*/
+!examples-dosl/include-local/*/*/*.h
+!examples-dosl/include-local/*/*/*.hpp
+!examples-dosl/include-local/*/*/*.cpp
+!examples-dosl/include-local/*/*/*.tcc
 

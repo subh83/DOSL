@@ -31,20 +31,24 @@
 
 // DOSL library
 #define _DOSL_VERBOSE_LEVEL 1   // 0 by default
-#define _DOSL_ALGORITHM AStar  // directs DOSL to load the header for 'AStar' planner only
 #include <dosl/dosl>
 
-#define SQRT2 1.41421356237
-const double dists8connected[] = {SQRT2, 1, SQRT2, 1, 1, SQRT2, 1, SQRT2};
+// Lical includes
+#include <dosl/aux-utils/double_utils.hpp>  // SQRT2, isEqual_d
+
+const double dists8connected[] = { SQRT2,  1.0,  SQRT2,
+                                     1.0,  0.0,  1.0,
+                                   SQRT2,  1.0,  SQRT2 };
 
 // ==============================================================================
 
 // The following class defines the type of a vertex of the graph:
 
-class myNode : public AStarNode<myNode,double> // DOSL provides 'AStarNode<node_type,cost_type>'
+template <class AlgClass>
+class myNode : public AlgClass::template Node< myNode<AlgClass>, double > // e.g., 'AStar::Node<node_type,cost_type>'
 {
 public:
-    int x, y;
+    double x, y;
     
     myNode () { }
     myNode (int xx, int yy) : x(xx), y(yy) { }
@@ -53,47 +57,76 @@ public:
     bool operator==(const myNode& n) const { return (x==n.x && y==n.y); }
     
     // An efficint hash function for node type is desired. optional.
-    int getHashBin (void) { return (abs(((int)x>>4) + ((int)y<<3) + ((int)x<<4) + ((int)y>>3))); }
+    int getHashBin (void) { return (abs( (iround(x)>>4) + (iround(y)<<3) + (iround(x)<<4) + (iround(y)>>3))); }
     
-    // optional:
+    // optional print:
     void print (std::string head="", std::string tail="") const
             { _dosl_cout << head << "x=" << x << ", y=" << y << _dosl_endl; }
+    
+    
+    // ---------------------------------------------------------------
+    // SStar only: Operator overloading for convex combination [for path recnstruction in SStar algorithm.]
+    
+    myNode operator+(const myNode &b) const { // n1 + n2
+        myNode ret = (*this);
+        ret.x += b.x;
+        ret.y += b.y;
+        return (ret);
+    }
+    
+    myNode operator*(const double &c) const { // n1 * c (right scalar multiplication)
+        myNode ret = (*this);
+        ret.x *= c;
+        ret.y *= c;
+        return (ret);
+    } 
 };
 
 // ==============================================================================
 
 // The following class contains the main search and path reconstruction function.
 
-class searchProblem : public AStarProblem<myNode,double> // DOSL provides 'AStarProblem<node_type,cost_type>'
+template <class AlgClass>
+class searchProblem : public AlgClass::template Algorithm< myNode<AlgClass>, double>
 {
 public:
+    typedef myNode<AlgClass> MyNode;
     // user-defined problem parameters:
-    myNode goal_node;
+    MyNode goal_node;
     // Constructors, if any
-    searchProblem () { goal_node = myNode(200,150); }
+    searchProblem () { goal_node = MyNode(200,150); }
     
     // -----------------------------------------------------------
-    // The following functions are use by 'AStarProblem<nodeType,costType>' class to define graph sructure and search parameters
+    // The following functions are use by 'Algorithm' class to define graph sructure and search parameters
     
     /* Implementation of 'getSuccessors':
         template <class nodeType, class costType> class AStarProblem 
             { virtual void getSuccessors (NodeType &n, std::vector<NodeType>* const s, std::vector<CostType>* const c); }
        Takes in a vertex, n, and returns its neighbors/successors, s, and the costs/distances of the edges, c. */
     
-    void getSuccessors (myNode &n, std::vector<myNode>* s, std::vector<double>* c) {
+    void getSuccessors (MyNode &n, std::vector<MyNode>* s, std::vector<double>* c) {
         // This function should account for obstacles, constraints and size of environment.
-        myNode tn;
-        int ct=0;
+        MyNode tn;
+        int ct=-1;
         for (int a=-1; a<=1; a++)
             for (int b=-1; b<=1; b++) {
+                ++ct;
                 if (a==0 && b==0) continue;
+                
+                if (this->algorithm_name() == "SStar") { /// triangulation for SStar
+                    int xParity = ((int)round(fabs(n.x))) % 2;
+                    if (xParity==0 && (a!=0 && b==-1)) continue;
+                    if (xParity==1 && (a!=0 && b==1)) continue;
+                }
                 
                 tn.x = n.x + a;
                 tn.y = n.y + b;
                 
+                // Allow nodes to be contained within rectangle with corners (-100,-100) and (300,300)
+                if (tn.x<-100 || tn.y<-100 || tn.x>300 || tn.y>300) continue;
+                
                 s->push_back (tn);
                 c->push_back (dists8connected[ct]); 
-                ++ct;
             }
     }
     
@@ -102,36 +135,49 @@ public:
             { virtual std::vector<NodeType> getStartNodes (void); }
        Returns the list of vertices(s) to start the search with. */
     
-    std::vector<myNode> getStartNodes (void) {
-        std::vector<myNode> startNodes;
+    std::vector<MyNode> getStartNodes (void) {
+        std::vector<MyNode> startNodes;
         for (int a=0; a<1; ++a) {
-            myNode tn (0, 0); // start node
+            MyNode tn (0, 0); // start node
             startNodes.push_back (tn);
         }
         return (startNodes);
     }
     
-    /* Implementation of 'stopsearch':
+    /* Implementation of 'stopSearch':
         template <class nodeType, class costType> class AStarProblem 
-            { virtual bool stopsearch (NodeType &n); }
+            { virtual bool stopSearch (NodeType &n); }
        Determines when to stop the search.
        Optional -- search will terminate only when heap is empty (all nodes in graph have been expanded). */
     
-    bool stopsearch (myNode &n) {
+    bool stopSearch (MyNode &n) {
         return (n==goal_node);
+    }
+    
+    // ---------------------------------------------------------------
+    // ThetaStar only: 'isSegmentFree' checks and computes cost of long segments
+    
+    bool isSegmentFree (MyNode &n1, MyNode &n2, double* c)
+    {
+        double dx=n2.x-n1.x, dy=n2.y-n1.y;
+        *c = sqrt(dx*dx + dy*dy);
+        return (true); // this should check for intersection with obstacles
     }
 };
 
 // ==============================================================================
+// Main function that runs search and prints result
 
-int main(int argc, char *argv[])
-{
-    searchProblem test_search_problem;
+template <class AlgClass>
+void run_search (void) {
+    std::cout << "run_search: Algorithm name: " << AlgClass::AlgorithmName << std::endl;
+    
+    searchProblem<AlgClass> test_search_problem;
     test_search_problem.AllNodesSet.set_hash_table_size (8192); // optional.
     test_search_problem.search();
     
     // get path
-    std::vector<myNode*> path = test_search_problem.getPointerPathToNode (test_search_problem.goal_node);
+    auto path = test_search_problem.reconstructPointerPath (test_search_problem.goal_node);
     
     // print path
     printf ("\nPath (as Octave array): \n[");
@@ -140,6 +186,25 @@ int main(int argc, char *argv[])
         if (a>0) std::cout << "; ";
         else std::cout << "]\n\n";
     }
+}
+
+// ==============================================================================
+
+int main(int argc, char *argv[])
+{
+    std::string alg_name;
+    std::cout << "Please enter algorithm name [" 
+                    _YELLOW "AStar" YELLOW_ "|" _YELLOW "SStar" YELLOW_ "|" _YELLOW "ThetaStar" YELLOW_ "]: ";
+    std::cin >> alg_name;
+    
+    if (alg_name == "AStar")
+        run_search<AStar>();
+    else if (alg_name == "SStar")
+        run_search<SStar>();
+    else if (alg_name == "ThetaStar")
+        run_search<ThetaStar>();
+    else
+        std::cout << "Unknown algorithm." << std::endl;
     
     return (1);
 }

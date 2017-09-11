@@ -24,10 +24,10 @@
 *                                                                                        *
 *************************************************************************************** **/
 
-#ifndef __DOSL_AStar_TCC
-#define __DOSL_AStar_TCC
+#ifndef __DOSL_ThetaStar_TCC
+#define __DOSL_ThetaStar_TCC
 // user-readable
-#define DOSL_ALGORITHM_AStar
+#define DOSL_ALGORITHM_ThetaStar
 
 // includes
 
@@ -38,7 +38,6 @@
 #include <vector>
 #include <limits>
 #include <type_traits>
-#include <string>
 
 #include "../utils/macros_constants.tcc"
 #include "../utils/stl_utils.tcc"
@@ -46,9 +45,9 @@
 
 // ====================================================================
 
-class AStar {
+class ThetaStar {
 public:
-    declare_alg_name("AStar"); // macro from '_planner_bits'
+    declare_alg_name("ThetaStar"); // macro from '_planner_bits'
 
     class LineageDataType
     {
@@ -73,7 +72,7 @@ public:
         typedef nodeType  NodeType;
         
         // Utility for looking up algorithm name:
-        declare_alg_name("AStar"); // macro from '_planner_bits'
+        declare_alg_name("ThetaStar"); // macro from '_planner_bits'
         
         // For keeping track of hash insertion (new node creation)
         bool PostHashInsertInitiated;
@@ -89,7 +88,7 @@ public:
         bool SuccessorsCreated;
         
         // for reconstruction
-        NodeType* CameFrom;
+        NodeType* CameFrom; // *** Theta-star: same as 'grand-parent'
         
         // -------------------------------------
         // constructors
@@ -111,8 +110,8 @@ public:
         //      (need not be virtual since use is of only derived class members).
         // Need to have virtual members with same name in the problem class.
         inline int getHashBin (void) { return (0); }
-        inline void getSuccessors (std::vector<nodeType>* s, std::vector<CostType>* c)
-            { _dosl_default_fun_warn("AStar::[Algorithm|Node]::getSuccessors"); }
+        inline void getSuccessors (std::vector<nodeType>* s, std::vector<CostType>* c) 
+            { _dosl_default_fun_warn("ThetaStar::[Algorithm|Node]::getSuccessors"); }
         inline CostType getHeuristics (void) { return ((CostType)0.0); }
         inline bool bookmarkNode (void) { return (false); }
         inline bool stopSearch (void) { return (false); }
@@ -136,7 +135,7 @@ public:
         NodeType dummy_node; // forces compiler to generate code for the possibly template class 'nodeType'
         
         // Utility for looking up algorithm name:
-        declare_alg_name("AStar"); // macro from '_planner_bits'
+        declare_alg_name("ThetaStar"); // macro from '_planner_bits'
         
         // Constants
         #if _DOSL_EVENTHANDLER
@@ -208,9 +207,11 @@ public:
         inline virtual unsigned int getHashBin (NodeType &n) { return (n.getHashBin()); }
         inline virtual void getSuccessors (NodeType &n, std::vector<NodeType>* const s, std::vector<CostType>* const c) 
                                             { return (n.getSuccessors(s,c)); }
+        inline virtual bool isSegmentFree (NodeType &n1, NodeType &n2, CostType* c) // *** Theta-star specific
+            { _dosl_default_fun_warn("ThetaStar::Algorithm::isSegmentFree"); *c=(CostType)0.0; return (true); } 
         inline virtual CostType getHeuristics (NodeType& n) { return (n.getHeuristics()); }
         inline virtual std::vector<NodeType> getStartNodes (void)
-            { _dosl_default_fun_warn("AStar::Algorithm::getStartNodes"); return (std::vector<NodeType>()); }
+            { _dosl_default_fun_warn("ThetaStar::Algorithm::getStartNodes"); return (std::vector<NodeType>()); }
         inline virtual bool bookmarkNode (NodeType &n) { return (n.bookmarkNode()); }
         inline virtual bool stopSearch (NodeType &n) { return (n.stopSearch()); }
         #if _DOSL_EVENTHANDLER
@@ -237,7 +238,7 @@ public:
 // =====================================================================================
 
 template <class nodeType, class costType>
-void AStar::Algorithm<nodeType,costType>::GenerateSuccessors (NodeType* nodeInHash_p)
+void ThetaStar::Algorithm<nodeType,costType>::GenerateSuccessors (NodeType* nodeInHash_p)
 {
     if ( !(nodeInHash_p->SuccessorsCreated) ) // Successors were not generated previously
     {
@@ -263,7 +264,7 @@ void AStar::Algorithm<nodeType,costType>::GenerateSuccessors (NodeType* nodeInHa
 // -------------------------------------------------------------------------------------
 
 template <class nodeType, class costType>
-void AStar::Algorithm<nodeType,costType>::search (void)
+void ThetaStar::Algorithm<nodeType,costType>::search (void)
 {
     _dosl_verbose_head(1);
     
@@ -284,7 +285,8 @@ void AStar::Algorithm<nodeType,costType>::search (void)
     // Temporary variables
     NodeType* thisNodeInHash_p;
     NodeType* thisNeighbourNodeInHash_p;
-    CostType thisTransitionCost, test_g_val;
+    NodeType* test_cameFrom;
+    CostType thisTransitionCost, grandparentSegmentCost, test_g_val, temp_g_val;
     
     // -----------------------------------
     // Insert start nodes into open list
@@ -407,12 +409,24 @@ void AStar::Algorithm<nodeType,costType>::search (void)
                 continue;
             
             // Update CameFrom, G and F values if better
+            // path 1
+            test_cameFrom = thisNodeInHash_p;
             test_g_val = thisNodeInHash_p->G + thisTransitionCost;
+            // path 2: *** Theta-star specific
+            if (isSegmentFree (*(thisNodeInHash_p->CameFrom), *thisNeighbourNodeInHash_p, &grandparentSegmentCost)) { // path 2
+                //printf("Theta-star: grandparentSegmentCost = %f\n", grandparentSegmentCost);
+                temp_g_val = thisNodeInHash_p->CameFrom->G + grandparentSegmentCost;
+                if (temp_g_val < test_g_val) {
+                    test_cameFrom = thisNodeInHash_p->CameFrom;
+                    test_g_val = temp_g_val;
+                }
+            }
+            
             if (test_g_val < thisNeighbourNodeInHash_p->G) {
                 thisNeighbourNodeInHash_p->G = test_g_val;
                 thisNeighbourNodeInHash_p->F = getHeapKey (*thisNeighbourNodeInHash_p);
-                thisNeighbourNodeInHash_p->CameFrom = thisNodeInHash_p;
-                thisNeighbourNodeInHash_p->lineageData = thisNodeInHash_p->lineageData.next_generation();
+                thisNeighbourNodeInHash_p->CameFrom = test_cameFrom;
+                thisNeighbourNodeInHash_p->lineageData = test_cameFrom->lineageData.next_generation();
                 
                 // Since thisNeighbourGraphNode->F is changed, re-arrange it in heap
                 NodeHeap.update (thisNeighbourNodeInHash_p);
@@ -420,6 +434,9 @@ void AStar::Algorithm<nodeType,costType>::search (void)
                 nodeEvent (*thisNeighbourNodeInHash_p, UPDATED);
                 #endif
             }
+            
+            
+            
         }
     }
     
@@ -434,7 +451,7 @@ void AStar::Algorithm<nodeType,costType>::search (void)
 // -------------------------------------------------------------------------------------
 
 template <class nodeType, class costType>
-void AStar::Algorithm<nodeType,costType>::clear (bool clearHeap, bool resetNodesInHash, unsigned int clearHash)
+void ThetaStar::Algorithm<nodeType,costType>::clear (bool clearHeap, bool resetNodesInHash, unsigned int clearHash)
 {
     NodeType* thisNodeInHash_p;
     if (clearHeap) NodeHeap.clear();
@@ -455,14 +472,14 @@ void AStar::Algorithm<nodeType,costType>::clear (bool clearHeap, bool resetNodes
 // For reading results:
 
 template <class nodeType, class costType>
-std::vector<nodeType*> AStar::Algorithm<nodeType,costType>::reconstructPointerPath (nodeType n)
+std::vector<nodeType*> ThetaStar::Algorithm<nodeType,costType>::reconstructPointerPath (nodeType n)
 {
     _dosl_verbose_head(1);
         
     std::vector<NodeType*> thisPath;
     // Reconstruct path
     NodeType* thisNodeInHash_p = AllNodesSet.get(n);
-    if (_dosl_verbose_on(0))  n.print("Reconstruct path called");
+    if (_dosl_verbose_on(0))  n.print("Reconstruct path called on ");
     if (_dosl_verbose_on(1))  _dosl_printf("Node in hash: %x.", thisNodeInHash_p);
     while (thisNodeInHash_p) {
         if (_dosl_verbose_on(1)) thisNodeInHash_p->print();
@@ -477,7 +494,7 @@ std::vector<nodeType*> AStar::Algorithm<nodeType,costType>::reconstructPointerPa
 
 template <class nodeType, class costType>
     std::vector < std::unordered_map <nodeType*, costType> >
-        AStar::Algorithm<nodeType,costType>::reconstructPath (nodeType n)
+        ThetaStar::Algorithm<nodeType,costType>::reconstructPath (nodeType n)
 {
     std::vector<nodeType*> npVec = reconstructPointerPath (n);
     

@@ -1,9 +1,9 @@
 /** **************************************************************************************
 *                                                                                        *
-*    A Ridiculously Simple JSON Parser for C++ (RSJP-cpp)                                *
-*    Version 1.0a                                                                        *
+*    A Ridiculously Simple RSJ Parser for C++ (RSJp-cpp)                                 *
+*    Version 1.0b                                                                        *
 *    ----------------------------------------------------------                          *
-*    Copyright (C) 2016  Subhrajit Bhattacharya                                          *
+*    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
 *                                                                                        *
 *    This program is free software: you can redistribute it and/or modify                *
 *    it under the terms of the GNU General Public License as published by                *
@@ -28,34 +28,52 @@
 #include <fstream>
 
 // RSJP header:
-#include "local-include/JSONparser.tcc"
+#include "../include-local/RSJparser.tcc"
 
 int main(int argc, char *argv[])
 {
+    // ===============================================================================
     // Example 0:
-    std::cout << "\n---------\nEXAMPLE 0: " << 
-        JSONcontainer("{'JSON': string_data, keyName: [2,3,5,7]}")["keyName"][2].as<int>() << std::endl;
+    
+    std::cout << "\n---------\nEXAMPLE 0: " << std::endl;
+    std::cout << RSJresource("{'some_name': string_data, keyName: [2,3,5,7]}")["keyName"][2].as<int>() << std::endl;
+    
     
     // ===============================================================================
     // Example 1:
-    std::string    str = "{'animal':cat, coordinates: [2, 5, 8], is_vicious: false, "
-                         "\ncomment:'It\\'s in fact quite...\\t adorable.' }";
-    JSONcontainer  my_container (str); // JSON parser:
     
-    std::cout << "\n---------\nEXAMPLE 1: The string:\n" << str << "\n" << std::endl;
+    std::string    str = "{'animal':cat, coordinates: [2, 5, 8], height: 1, \nis_vicious: false, comment:'It\\'s in fact quite...\\t adorable.' }";
+    RSJresource    my_resource (str); // RSJ parser.
+    
+    std::cout << "\n---------\nEXAMPLE 1: " << std::endl;
+    std::cout << "The JSON string:\n\n" << str << "\n" << std::endl;
     
     std::cout << "Iterating over the object fields:" << std::endl;
-    JSONobject obj_map = my_container.as<JSONobject>(); // JSONobject = std::map <std::string,JSONcontainer>
+    RSJobject obj_map = my_resource.as<RSJobject>(); // RSJobject = std::map <std::string,RSJresource>
     for (auto it=obj_map.begin(); it!=obj_map.end(); ++it)
-        std::cout << "\t" << it->first << " => " << it->second.data << std::endl;
+        std::cout << "\t" << it->first << " => " << it->second.raw_data() << std::endl;
     std::cout << std::endl;
     
     std::cout << "Some specific queries:" << std::endl;
-    std::cout << "\tThe animal is: " << my_container["animal"].as<std::string>() << std::endl;
-    std::cout << "\tIts Y coordinate is: " << my_container["coordinates"][1].as<int>() << std::endl;
-    std::cout << "\tIts Z coordinate is: " << my_container["coordinates"][2].as<double>() << std::endl;
-    std::cout << "\tIs it vicious? " << my_container["is_vicious"].as<bool>() << std::endl;
-    std::cout << "\tComment: " << my_container["comment"].as<std::string>() << std::endl;
+    std::cout << "\tThe animal is: " << my_resource["animal"].as<std::string>("dog") << std::endl;
+    std::cout << "\tIts Y coordinate is: " << my_resource["coordinates"][1].as<int>() << std::endl;
+    std::cout << "\tIts Z coordinate is: " << my_resource["coordinates"][2].as<double>() << std::endl;
+    std::cout << "\tIs it vicious? " << my_resource["is_vicious"].as<bool>() << std::endl;
+    std::cout << "\tComment: " << my_resource["comment"].as<std::string>() << std::endl;
+    
+    
+    if (my_resource["length"].exists())
+        std::cout << "\tLength: " << my_resource["length"].as<int>() << std::endl;
+    else 
+        std::cout << "\tLength: [does not exist.]"  << std::endl;
+    
+    if (my_resource["height"].exists())
+        std::cout << "\tHeight: " << my_resource["height"].as<int>() << std::endl;
+    else
+        std::cout << "\tHeight: [does not exist.]"  << std::endl;
+    
+    int default_width = -1;
+    std::cout << "\tWidth: " << my_resource["width"].as<int>(default_width) << std::endl;
 }
 
 

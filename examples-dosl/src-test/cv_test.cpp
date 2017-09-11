@@ -23,53 +23,56 @@
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
-#ifndef __DOSL_MAIN_
-#define __DOSL_MAIN_
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <iostream>
 
-/* *** Helper macro for selecting planner ***
+// Other libraries:
+// Open CV:
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
 
-Set 'DOSL_ALGORITHM' before including this file. Otherwise, multiple algorithm files will be included.
-Ex:
-    #define _DOSL_ALGORITHM  AStar
-    #include "dosl.h"
+#include <dosl/aux-utils/cvParseMap2d.hpp>
+#include <dosl/aux-utils/string_utils.hpp> // compute_program_path
 
-If set, also provides macro 'DOSL_ALGORITHM(str)'
-Ex:
-    DOSL_ALGORITHM(Node)
-expands to
-    AStarNode
 
-Alternatively:
-    _JOIN(_DOSL_ALGORITHM,Node)
-*/
-
-#define _DOSL_VERSION 3.25
-#include "utils/back_compatibility.hpp"
-
-// String joining macro
-#define QJOIN(x, y) x ## y
-#define _JOIN(x, y) QJOIN(x, y)
-
-#define QMAKESTR(x) #x
-#define MAKESTR(x) QMAKESTR(x)
-
-#ifdef _DOSL_ALGORITHM
+int main(int argc, char *argv[])
+{
+    compute_program_path();
     
-    #define EVAL(x) x
-    #define MAKEINC(x) planners/EVAL(x).tcc
+    std::string imagefName = program_path + "../files-expt/L457.png";
+    cvParseMap2d my_map = cvParseMap2d (imagefName, true); // setting 'true' for the second parameter computes representative points
+    
+    // Make changes to the map
+    // -----------------------
+    
+    for (int a=2; a<10; ++a)
+        for (int b=2; b<15; ++b)
+            my_map.getPixel(a, b) = OBSTACLE_PIXEL;
+    
+    my_map.update(); // need to update since the map was changed (will recompute representative points)
+    
+    // Plotting:
+    // --------
+    my_map.print_info ();
+    
+    // Get the un-occupied map
+    cv::Mat image_to_display = my_map.getCvMat (COLOR_MAP);
+    
+    // plot representative points
+    for (int i=0; i<my_map.repPts.size(); ++i) {
+        cv::circle (image_to_display, my_map.repPts[i], 3, cv::Scalar(0,0,255), -1);
+        image_to_display.at<cv::Vec3b> (my_map.repPts[i].y, my_map.repPts[i].x) = cv::Vec3b(0,255,0);
+        printf("reprsentative point %d: (%d, %d).\n", i, my_map.repPts[i].x, my_map.repPts[i].y);
+    }
+    
+    // display
+    printf("Map: %s. width = %d, high = %d.\n", imagefName.c_str(), my_map.width(), my_map.height());
+    cv::resize (image_to_display, image_to_display, cv::Size(), 2, 2);
+    cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE);
+    cv::imshow("Display window", image_to_display);
+    cv::waitKey(0);
+}
 
-    // include:
-    #include MAKESTR(MAKEINC(_DOSL_ALGORITHM))
-    
-#else
-    
-    #define _DOSL_ALGORITHM  UndefinedAlgorithm
-    
-    #include "planners/AStar.tcc"
-    #include "planners/SStar.tcc"
-    #include "planners/ThetaStar.tcc"
-    // TODO: Include other planners
-    
-#endif
 
-#endif

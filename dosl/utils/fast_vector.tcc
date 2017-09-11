@@ -95,7 +95,7 @@ public:
     fast_vector(fast_vector const& other) : data(NULL), _capacity(0u), _size(0u)
         { if (other.data) { reserve(other._capacity); old_capacity = other.old_capacity; for(_size=0;_size<other._size;++_size) data[_size]=other.data[_size]; } }
     fast_vector& operator=(fast_vector const& rhs) 
-        { if (rhs.data) { reserve(rhs._capacity); old_capacity = rhs.old_capacity; for(_size=0;_size<rhs._size;++_size) data[_size]=rhs.data[_size]; } return *this; }
+        { if (rhs.data) { data=NULL; reserve(rhs._capacity); old_capacity = rhs.old_capacity; for(_size=0;_size<rhs._size;++_size) data[_size]=rhs.data[_size]; } return *this; }
     void copy_shared(fast_vector const& rhs) // shared data copy. warning: destroying one will invalidate other.
         { free(data); data = rhs.data; old_capacity = rhs.old_capacity; _capacity = rhs._capacity; _size = rhs._size; }
 };
@@ -115,7 +115,7 @@ public:
     using fast_vector<T, 0u>::data;
     //using fast_vector<T, 0u>::operator[];
 
-    inline fast_vector() { reserve(4); }
+    inline fast_vector() : fast_vector<T,0u>() { reserve(4); }
     inline fast_vector(size_t n) : fast_vector<T,0u>(n) { }
     fast_vector(size_t n, T const& item) : fast_vector<T,0u>(n, item) { } //_capacity(n), old_capacity(0u), _size(n) 
     //    { data = (T*)malloc(sizeof(T)*n); T* _end=data+_size; for (T* dp=data; dp!=_end; ++dp) *dp=item; }

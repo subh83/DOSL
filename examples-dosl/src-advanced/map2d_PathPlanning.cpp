@@ -29,80 +29,73 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-
-// Other libraries:
 // Open CV:
-#include <opencv/cv.h>
-#include <opencv/cvaux.h>
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp> 
+#include <opencv2/highgui.hpp> 
 
 // DOSL library
-
-// Optional parameters -- to be declared before including dosl: 
-// #define _DOSL_DEBUG 1                // 0,1, or 2
-// #define _DOSL_AUTOCORRECT 1          // 0 or 1
-// #define _DOSL_VERBOSE_LEVEL 0        // 0 to 5
-// #define _DOSL_VERBOSE_ITEMS "NONE"   // "fun1,fun2" or "NONE" or "ALL"
-           // Common items: "reconstructPath,findCamefromPoint,getAllAttachedMaximalSimplices,getAllMaximalSimplicesFromSet"
-// #define _DOSL_PRINT_COLORS 1
-// #define _DOSL_EVENTHANDLER 1
-
-#ifndef _DOSL_ALGORITHM // can pass at command line during compilation: -D_DOSL_ALGORITHM=AStar
-    #define _DOSL_ALGORITHM  AStar
-#endif
 #include <dosl/dosl>
 
-// Local libraries/headers
-#include "local-include/cvParseMap2d.h"
-#include "local-include/JSONparser.tcc"
+// Local utility libraries/headers
+#include <dosl/aux-utils/cvParseMap2d.hpp>
+#include <dosl/aux-utils/double_utils.hpp>
+#include <dosl/aux-utils/string_utils.hpp> // compute_program_path
+#include "../include-local/RSJparser.tcc"
 
 // =======================
-// Other parameters
 
+// Algorithm
+#ifndef _DOSL_ALGORITHM // can pass at command line during compilation: -D_DOSL_ALGORITHM=AStar
+    #define _DOSL_ALGORITHM  AStar // AStar, SStar or ThetaStar
+#endif
+
+// Graph/planning options
 #define GRAPH_TYPE 8 // 6 or 8
 
-// math macros / constants
-#define sign(x) ((x>0.0)?1.0:((x<0.0)?-1.0:0.0))
-#define PI       3.14159265359
-#define PI_BY_3  1.0471975512
-#define SQRT3BY2 0.86602540378
-#define INFINITESIMAL_DOUBLE  1e-6
-
-// output options
+// display options
 #define _STAT 0
-
 #define _VIS 1
 #define VIS_INTERVAL 100
 #define VERTEX_COLORS 1
 #define SAVE_IMG_INTERVAL 10000 // 0 to not save at all. -1 to save last frame only.
 
-// ---------------------------------------------------
-// derived values
-#if GRAPH_TYPE==8
-    #define COORD_TYPE int
-#else
-    #define COORD_TYPE double
-#endif
 
 // ==============================================================================
-// helper functions
 
-int approx_floor (double x, double tol=INFINITESIMAL_DOUBLE) {
-    int ret = floor (x);
-    if (ret+1-x<tol) ++ret;
-    return (ret);
-}
-
-// ==============================================================================
+#define COORD_TYPE double // can be 'int' only if (GRAPH_TYPE==8 && _DOSL_ALGORITHM!=SStar)
 
 // A node of the graph
-class myNode : public DOSL_CLASS(Node)<myNode,double>
+class myNode : public _DOSL_ALGORITHM::Node<myNode,double>
 {
 public:
     COORD_TYPE x, y;
     
+    // Comparison operator:
+    bool operator==(const myNode& n) const {
+        #if GRAPH_TYPE == 8 // COORD_TYPE int
+        return ((x==n.x) && (y==n.y));
+        #else
+        return (fabs(x-n.x)<INFINITESIMAL_DOUBLE  &&  fabs(y-n.y)<INFINITESIMAL_DOUBLE);
+        #endif
+    }
+    
+    // Inherited functions being overwritten
+    int getHashBin (void) const {
+        #if GRAPH_TYPE == 8 // COORD_TYPE int
+        return (abs(x));
+        #else
+        return ( MAX(round(fabs(x)+INFINITESIMAL_DOUBLE), round(fabs(x)-INFINITESIMAL_DOUBLE)) );
+        #endif
+    }
+    
+    // --------------------------------------------
+    
+    // constructor
+    myNode () { }
+    myNode (COORD_TYPE xx, COORD_TYPE yy) : x(xx), y(yy) { put_in_grid(); }
+    
     #if GRAPH_TYPE == 8
-        void put_in_grid (void) { }
+        void put_in_grid (void) { x = (COORD_TYPE)round(x); y = (COORD_TYPE)round(y); }
     #elif GRAPH_TYPE == 6
         void put_in_grid (void) {
             int yLevel = round (y / SQRT3BY2);
@@ -113,29 +106,6 @@ public:
                 x = round(x+0.5+INFINITESIMAL_DOUBLE) - 0.5;
         }
     #endif
-    
-    // *** This must be defined for the node
-    bool operator==(const myNode& n) const {
-        #if GRAPH_TYPE == 8 // COORD_TYPE int
-        return ((x==n.x) && (y==n.y));
-        #else
-        return (fabs(x-n.x)<INFINITESIMAL_DOUBLE  &&  fabs(y-n.y)<INFINITESIMAL_DOUBLE);
-        #endif
-    }
-    
-    // constructor
-    myNode () { }
-    myNode (COORD_TYPE xx, COORD_TYPE yy) : x(xx), y(yy) { put_in_grid(); }
-    
-    
-    // Inherited functions being overwritten
-    int getHashBin (void) const {
-        #if GRAPH_TYPE == 8 // COORD_TYPE int
-        return (abs(x));
-        #else
-        return ( MAX(round(fabs(x)+INFINITESIMAL_DOUBLE), round(fabs(x)-INFINITESIMAL_DOUBLE)) );
-        #endif
-    }
     
     // print
     void print (std::string head="", std::string tail="") const {
@@ -148,17 +118,34 @@ public:
             printf ("%x (%f), ", it->first, it->second);
         std::cout << tail << _dosl_endl;
     }
+    
+    // ---------------------------------------------------------------
+    // Operator overloading for convex combination -- for Path Recnstruction in SStar algorithm
+    
+    myNode operator+(const myNode &b) const { // n1 + n2
+        myNode ret = (*this);
+        ret.x += b.x;
+        ret.y += b.y;
+        return (ret);
+    }
+    
+    myNode operator*(const double &c) const { // n1 * c (right scalar multiplication)
+        myNode ret = (*this);
+        ret.x *= c;
+        ret.y *= c;
+        return (ret);
+    } 
 };
 
 // ==============================================================================
 
-class searchProblem : public DOSL_CLASS(Problem)<myNode,double>
+class searchProblem : public _DOSL_ALGORITHM::Algorithm<myNode,double>
 {
 public:
     // Fime names and JSON objects
     std::string   map_image_fName, expt_fName, expt_folderName, expt_Name, out_folderName;
     cvParseMap2d  my_map;
-    JSONcontainer expt_container;
+    RSJresource expt_container;
     
     // Image display variables / parameters
     cv::Mat image_to_display;
@@ -196,20 +183,29 @@ public:
         
         // Read from file
         std::ifstream my_fstream (expt_fName);
-        expt_container = JSONcontainer (my_fstream)[expt_Name];
-        map_image_fName = expt_folderName + expt_container["map_name"].as<std::string>();
-        my_map = cvParseMap2d (map_image_fName, false);
+        expt_container = RSJresource (my_fstream)[expt_Name];
+        
+        // obstacle map
+        if (expt_container["environment"]["pixmap"].exists()) {
+            map_image_fName = expt_folderName + expt_container["environment"]["pixmap"].as<std::string>();
+            my_map = cvParseMap2d (map_image_fName, false);
+        }
+        else if (expt_container["environment"]["width"].exists() && expt_container["environment"]["height"].exists()) {
+            my_map = cvParseMap2d (cv::Mat (expt_container["environment"]["height"].as<int>(), 
+                                            expt_container["environment"]["width"].as<int>(),
+                                                            CV_8UC3, cv::Scalar(255,255,255)), false);
+        }
         
         // read data for planning
         MAX_X=my_map.width(); MIN_X=0; MAX_Y=my_map.height(); MIN_Y=0;
-        startNode = myNode (expt_container["start"][0].as<int>(), expt_container["start"][1].as<int>());
-        goalNode = myNode (expt_container["goal"][0].as<int>(), expt_container["goal"][1].as<int>());
+        startNode = myNode (expt_container["start"][0].as<COORD_TYPE>(), expt_container["start"][1].as<COORD_TYPE>());
+        goalNode = myNode (expt_container["goal"][0].as<COORD_TYPE>(), expt_container["goal"][1].as<COORD_TYPE>());
         startNode.put_in_grid(); goalNode.put_in_grid(); 
         
         // display options
-        PLOT_SCALE = 2.0;
-        VERTEX_SIZE = 1.0;
-        LINE_THICKNESS = 4.0; // CV_FILLED
+        PLOT_SCALE = expt_container["plot_options"]["plot_scale"].as<double>(1.0);
+        VERTEX_SIZE = expt_container["plot_options"]["vertex_size"].as<double>(1.0);
+        LINE_THICKNESS = expt_container["plot_options"]["line_thickness"].as<double>(2.0); // CV_FILLED
         
         // saving options
         frameno = 0;
@@ -230,7 +226,7 @@ public:
     // -----------------------------------------------------------
     
     bool isNodeInWorkspace (const myNode& tn) {
-        if ( tn.x<MIN_X || tn.x>MAX_X || tn.y<MIN_Y || tn.y>MAX_Y )  return (false);
+        if ( tn.x<MIN_X || tn.x>=MAX_X || tn.y<MIN_Y || tn.y>=MAX_Y )  return (false);
         return (true);
     }
     
@@ -256,7 +252,8 @@ public:
         return (true);
     }
     
-    // -----------------------------------------------------------
+    // ======================================================================================
+    // All the following functions are virtual members of 'Algorithm' class being overwritten
     
     void getSuccessors (myNode &n, std::vector<myNode>* s, std::vector<double>* c) // *** This must be defined
     {
@@ -301,13 +298,33 @@ public:
     }
     
     // -----------------------------------------------------------
+    // 'isSegmentFree' is required by ThetaStar
+    
+    bool isSegmentFree (myNode &n1, myNode &n2, double* c)
+    {
+        double dx=(double)(n2.x-n1.x), dy=(double)(n2.y-n1.y);
+        *c = sqrt(dx*dx + dy*dy);
+        
+        double step_count = 2.0 * ceil(*c);
+        double xstep=dx/step_count, ystep=dy/step_count;
+        
+        double xx, yy;
+        for (int a=0; a<step_count; ++a) {
+            xx = n1.x + a*xstep; yy = n1.y + a*ystep;
+            if (my_map.isObstacle ( (int)round(xx), (int)round(yy) ) )
+                return (false);
+        }
+        return (true);
+    }
+    
+    // -----------------------------------------------------------
     
     double getHeuristics (myNode& n)
     {
         /* double dx = goalNode.x - n.x;
         double dy = goalNode.y - n.y;
         return (sqrt(dx*dx + dy*dy)); */
-        return (0.0);
+        return (0.0); // Dijkstra's
     }
     
     // -----------------------------------------------------------
@@ -315,13 +332,12 @@ public:
     std::vector<myNode> getStartNodes (void) 
     {
         std::vector<myNode> startNodes;
-        
         startNodes.push_back (startNode);
+        
         #if _VIS
         cv::circle (image_to_display, cv_plot_coord(startNode.x,startNode.y), VERTEX_SIZE*PLOT_SCALE, 
                                                                 cvScalar (200.0, 150.0, 150.0), -1, 8);
         #endif
-        
         return (startNodes);
     }
     
@@ -339,11 +355,6 @@ public:
         
         // --------------------------------------------
         if (e & EXPANDED) {
-            // ++++++++++++++++++++++++++++++++++++++++++++++++++++
-            // Testing specific vertices
-            /* if (fabs(n.x-172.0)<0.01 && fabs(n.y-98.7269)<0.01)
-                RUNTIME_VERBOSE_SWITCH = 1; */
-            // ++++++++++++++++++++++++++++++++++++++++++++++++++++
             
             lastExpanded = n;
             bool cameFromNull = false;
@@ -373,7 +384,7 @@ public:
         
         else if (e & UNEXPANDED) {
             col = cvScalar(255.0, 0.0, 150.0); // purple
-            printf ("Backtrack started!!\n");
+            // printf ("Backtrack started!!\n");
         }
         
         else
@@ -405,31 +416,40 @@ public:
     
     // ---------------------------------------
     
-    bool stopsearch (myNode &n) {
+    bool stopSearch (myNode &n) {
         return (n==goalNode);
     }
+    
 };
 
 // ==============================================================================
 
+
 int main(int argc, char *argv[])
 {
-    //RUNTIME_VERBOSE_SWITCH = 0;
+    // Read command-line parameters:
+    compute_program_path();
     
-    std::string program_fName (argv[0]);
-    std::string program_folderName = program_fName.substr(0, program_fName.find_last_of("/\\")+1);
-    
-    std::string expt_f_name=program_folderName+"exptfiles/experiments.json", expt_name="path_plan_1";
-    if (argc > 1) {
+    std::string expt_f_name = program_path+"../files-expt/basic_experiments.json", expt_name="L457_expt1";
+    if (argc == 2) {
+        expt_name = argv[1];
+    }
+    else if (argc > 2) {
         expt_f_name = argv[1];
         expt_name = argv[2];
     }
     
-    searchProblem test_search_problem (expt_f_name, expt_name, program_folderName+"outfiles/");
+    printf (_BOLD _YELLOW "Note: " YELLOW_ BOLD_ "Using algorithm " _YELLOW  MAKESTR(_DOSL_ALGORITHM)  YELLOW_ 
+                ". Run 'make' to recompile with a different algorithm.\n");
+    
+    // -------------------------------------
+    
+    // search:
+    searchProblem test_search_problem (expt_f_name, expt_name, program_path+"../files-out/");
     test_search_problem.search();
     
-    // get path
-    auto path = test_search_problem.reconstructPath (test_search_problem.goalNode);
+    // get path:
+    auto ppath = test_search_problem.reconstructPointerPath (test_search_problem.goalNode);
     
     // -------------------------------------
     
@@ -437,38 +457,28 @@ int main(int argc, char *argv[])
     #if _VIS
     printf("\nPath: ");
     #endif
-    myNode thisPt=test_search_problem.startNode, lastPt;
-    std::vector<myNode> allPts;
     double cost = 0.0;
-    for (int a=path.size()-1; a>=0; --a) {
-        lastPt = thisPt;
-        thisPt = myNode(0.0, 0.0);
-        for (auto it=path[a].begin(); it!=path[a].end(); ++it) {
-            thisPt.x += it->second * it->first->x;
-            thisPt.y += it->second * it->first->y;
-        }
-        allPts.push_back (thisPt);
+    for (int a=1; a<ppath.size(); ++a) {
         #if _VIS
-        printf ("[%f,%f]; ", (double)thisPt.x, (double)thisPt.y);
         cv::line (test_search_problem.image_to_display, 
-                test_search_problem.cv_plot_coord(thisPt.x,thisPt.y), test_search_problem.cv_plot_coord(lastPt.x,lastPt.y), 
-                            cvScalar(200.0,100.0,100.0),
-                                    test_search_problem.LINE_THICKNESS*test_search_problem.PLOT_SCALE);
+                    test_search_problem.cv_plot_coord(ppath[a]->x,ppath[a]->y), 
+                        test_search_problem.cv_plot_coord(ppath[a-1]->x,ppath[a-1]->y), 
+                            cvScalar(200.0,100.0,100.0), test_search_problem.LINE_THICKNESS*test_search_problem.PLOT_SCALE);
         #endif
-        cost += sqrt ((thisPt.x-lastPt.x)*(thisPt.x-lastPt.x) + (thisPt.y-lastPt.y)*(thisPt.y-lastPt.y));
+        cost += sqrt ((ppath[a]->x-ppath[a-1]->x)*(ppath[a]->x-ppath[a-1]->x) +
+                        (ppath[a]->y-ppath[a-1]->y)*(ppath[a]->y-ppath[a-1]->y));
     }
     
     #if _VIS
-    for (int a=allPts.size()-1; a>=0; --a)
+    for (int a=0; a<ppath.size(); ++a)
         cv::circle (test_search_problem.image_to_display, 
-                test_search_problem.cv_plot_coord(allPts[a].x,allPts[a].y),
+                test_search_problem.cv_plot_coord(ppath[a]->x,ppath[a]->y),
                     test_search_problem.VERTEX_SIZE*test_search_problem.PLOT_SCALE, cvScalar(150.0,0.0,255.0), -1, 8);
     
     cv::imshow("Display window", test_search_problem.image_to_display);
     #endif
     
-    test_search_problem.clear();
-    
+    // print statistics
     #if _STAT
     char statFname[1024];
     sprintf(statFname, "%s%s_%s.txt", test_search_problem.out_folderName.c_str(), 
@@ -481,6 +491,7 @@ int main(int argc, char *argv[])
     }
     #endif
     
+    // save image file
     #if _VIS
     if (SAVE_IMG_INTERVAL != 0) {
         char imgFname[1024];
@@ -491,5 +502,8 @@ int main(int argc, char *argv[])
     printf ("\ncomputation time = %f, cost = %f\n", 0.0, cost);
     cvWaitKey();
     #endif
+    
+    // clear memory
+    test_search_problem.clear();
 }
 

@@ -1,7 +1,7 @@
 /** **************************************************************************************
 *                                                                                        *
 *    Part of                                                                             *
-*    Discrete Optimal Search Library (DOSL)                                              *
+*    Discrete Optimal search Library (DOSL)                                              *
 *    A template-based C++ library for discrete search                                    *
 *    Version 3.x                                                                         *
 *    ----------------------------------------------------------                          *
@@ -23,53 +23,20 @@
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
-#ifndef __DOSL_MAIN_
-#define __DOSL_MAIN_
 
-/* *** Helper macro for selecting planner ***
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
 
-Set 'DOSL_ALGORITHM' before including this file. Otherwise, multiple algorithm files will be included.
-Ex:
-    #define _DOSL_ALGORITHM  AStar
-    #include "dosl.h"
+#include "../include-local/mathevalAux.h"
 
-If set, also provides macro 'DOSL_ALGORITHM(str)'
-Ex:
-    DOSL_ALGORITHM(Node)
-expands to
-    AStarNode
-
-Alternatively:
-    _JOIN(_DOSL_ALGORITHM,Node)
-*/
-
-#define _DOSL_VERSION 3.25
-#include "utils/back_compatibility.hpp"
-
-// String joining macro
-#define QJOIN(x, y) x ## y
-#define _JOIN(x, y) QJOIN(x, y)
-
-#define QMAKESTR(x) #x
-#define MAKESTR(x) QMAKESTR(x)
-
-#ifdef _DOSL_ALGORITHM
+main (int argc, char **argv) {
     
-    #define EVAL(x) x
-    #define MAKEINC(x) planners/EVAL(x).tcc
+    MathEvaluator me("x/y + exp(y*x)", std::vector<std::string>({"x","y"}));
+    
+    me.set_var ("x", 0.1);
+    me.set_var ("y", 10.0);
+    printf ("Evaluated value = %f\n", me.eval());
+}
 
-    // include:
-    #include MAKESTR(MAKEINC(_DOSL_ALGORITHM))
-    
-#else
-    
-    #define _DOSL_ALGORITHM  UndefinedAlgorithm
-    
-    #include "planners/AStar.tcc"
-    #include "planners/SStar.tcc"
-    #include "planners/ThetaStar.tcc"
-    // TODO: Include other planners
-    
-#endif
-
-#endif

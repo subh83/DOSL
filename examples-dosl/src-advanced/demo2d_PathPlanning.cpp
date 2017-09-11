@@ -34,23 +34,13 @@
 
 // Other libraries:
 // Open CV:
-#include <opencv/cv.h>
-#include <opencv/cvaux.h>
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp> 
+#include <opencv2/highgui.hpp> 
 
-// DOSL library
-
-// Optional parameters -- to be declared before including dosl: 
-// #define _DOSL_DEBUG 1                // 0,1, or 2
-// #define _DOSL_AUTOCORRECT 1          // 0 or 1
-// #define _DOSL_VERBOSE_LEVEL 0        // 0 to 5
-// #define _DOSL_VERBOSE_ITEMS "NONE"   // "fun1,fun2" or "NONE" or "ALL"
-           // Common items: "reconstructPath,findCamefromPoint,getAllAttachedMaximalSimplices,getAllMaximalSimplicesFromSet"
-// #define _DOSL_PRINT_COLORS 1
-// #define _DOSL_EVENTHANDLER 1
-
-// Include main DOSL header
+// Include main DOSL header and local headers
 #include <dosl/dosl>
+#include <dosl/aux-utils/double_utils.hpp> // PI, SQRT3BY2, etc
+#include <dosl/aux-utils/string_utils.hpp>
 
 // The following allows us to use the 'DOSL_CLASS' macro.
 #ifndef _DOSL_ALGORITHM // Allows us to pass at command line during compilation: g++ ... -D_DOSL_ALGORITHM=AStar
@@ -58,25 +48,7 @@
 #endif
 
 // =======================
-
-#define PI       3.14159265359
-#define PI_BY_3  1.0471975512
-#define SQRT3    1.73205080757
-#define SQRT3BY2 0.86602540378
-
-#define SMALL_EPS  1e-8
-// relaxed comparisons (appropriate if x and y take discrete values)
-#define isEqual_d(x,y)  ( fabs((x)-(y)) < SMALL_EPS ) // x == y
-#define isLess_d(x,y)  ( (x)+SMALL_EPS < (y) ) // x < y
-#define isGreater_d(x,y)  ( (x) > (y)+SMALL_EPS ) // x < y
-
-#define sign(x) ((x>0.0)?1.0:((x<0.0)?-1.0:0.0))
-
-#define _VIS 1
-#define VIS_INTERVAL 10
-#define SAVE_IMG_INTERVAL -1 // 0 to not save at all. -1 to save last frame only.
-#define VERTEX_COLORS 1
-#define DRAW_INITIAL_GRID 1
+// graph structure options:
 
 #define GRAPH_TYPE 6 // 6 or 8
 
@@ -89,19 +61,25 @@
 #define REFINE_DISK_RAD  6.0
 #define REFINE_N_LAYERS  4.0
 
+// -----------------------
+// display options
+#define _VIS 1
+#define VIS_INTERVAL 10
+#define SAVE_IMG_INTERVAL -1 // 0 to not save at all. -1 to save last frame only.
+#define VERTEX_COLORS 1
+#define DRAW_INITIAL_GRID 1
+
 // ==============================================================================
 // globals
 
 double MAX_X=300.0, MIN_X=-300.0, MAX_Y=300.0, MIN_Y = -300.0;
-std::vector< std::vector<double> > OBS_RECT = { {69.99, -70.01, 170.01, 70.01} };
+std::vector< std::vector<double> > OBS_RECT = { {65.99, -76.01, 174.01, 76.01} };
                                     // Rectangles: {x1, y1, x2, y2}, x1<x2, y1<y2.  add little offset/wiggle
-
-std::string exec_path;
 
 // ==============================================================================
 
 // A node of the graph
-class myNode : public DOSL_CLASS(Node)<myNode,double>  // Expands to 'SStarNode' or 'AStarNode'
+class myNode : public _DOSL_ALGORITHM::Node<myNode,double>  // Expands to 'SStar::Node' or 'AStar::Node'
 {
 public:
     double x, y;
@@ -129,7 +107,7 @@ public:
     #endif
     
     myNode (double xx, double yy) : x(xx), y(yy) { put_in_grid(); }
-    bool operator==(const myNode& n) const { return ( isEqual_d(x,n.x) && isEqual_d(y,n.y) ); }; // This must be defined for the node
+    bool operator==(const myNode& n) const { return ( isEqual_d(x,n.x) && isEqual_d(y,n.y) ); }; // must be defined for node
     
     // constructor
     myNode () { }
@@ -168,7 +146,7 @@ public:
     }
     
     void print (std::string head="", std::string tail="") const {
-        _dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ "x=" << x << ", y=" << y << ", "; //dist=" << dist() << ". G=" << G; 
+        _dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ "x=" << x << ", y=" << y << ", ";
         printf("dist=%0.8f. G=", dist());
         (G==std::numeric_limits<double>::max())? printf("INF") : printf("%0.8f", G);
         printf(" (diff=%e)", G - dist());
@@ -178,6 +156,23 @@ public:
             printf ("%x, ", it->first);
         _dosl_cout << tail << _dosl_endl;
     }
+    
+    // ---------------------------------------------------------------
+    // SStar only: Operator overloading for convex combination [for path recnstruction in SStar algorithm.]
+    
+    myNode operator+(const myNode &b) const { // n1 + n2
+        myNode ret = (*this);
+        ret.x += b.x;
+        ret.y += b.y;
+        return (ret);
+    }
+    
+    myNode operator*(const double &c) const { // n1 * c (right scalar multiplication)
+        myNode ret = (*this);
+        ret.x *= c;
+        ret.y *= c;
+        return (ret);
+    } 
 };
 
 // ==============================================================================
@@ -268,9 +263,9 @@ public:
     }
 };
 
-// ---------------------------------------------------
+// ==============================================================================
 
-class SearchProblem : public DOSL_CLASS(Problem)<myNode,double>  // SStarProblem or AStarProblem
+class SearchProblem : public _DOSL_ALGORITHM::Algorithm<myNode,double>  // SStar::Algorithm or AStar::Algorithm
 {
 public:
     // Image display variables / parameters
@@ -297,8 +292,8 @@ public:
     SearchProblem ()
     {
         // variables
-        PLOT_SCALE = 10.0; //20.0; //10.0; //10.0; //8.0; //2.0; // 20;
-        PROBLEM_SCALE = 0.1; //0.05; //0.1; //0.2; //0.4; //1.0; // 0.1;
+        PLOT_SCALE = 10.0;
+        PROBLEM_SCALE = 0.1;
                     // ^^ must have: PLOT_SCALE * PROBLEM_SCALE = 1.0 for window size to be as desired.
         
         MAX_X*=PROBLEM_SCALE; MIN_X*=PROBLEM_SCALE;
@@ -312,8 +307,8 @@ public:
             #endif
         }
         
-        LINE_THICKNESS = 1; // CV_FILLED
-        VERTEX_SIZE = 0.2; // 0.3; //0.5;
+        LINE_THICKNESS = 0.08; // CV_FILLED
+        VERTEX_SIZE = 0.3; //0.15; // 0.3; //0.5;
         
         // Initiation
         frameno = 0;
@@ -347,8 +342,9 @@ public:
         #endif
         // obstacles
         for (int a=0; a<OBS_RECT.size(); a++) 
-            cv::rectangle(image_to_display, cv_plot_coord(OBS_RECT[a][0],OBS_RECT[a][1]), cv_plot_coord(OBS_RECT[a][2],OBS_RECT[a][3]), 
-                        cvScalar(100.0,100.0,100.0), -1 );
+            cv::rectangle(image_to_display, cv_plot_coord(OBS_RECT[a][0],OBS_RECT[a][1]), 
+                        cv_plot_coord(OBS_RECT[a][2],OBS_RECT[a][3]), 
+                            cvScalar(100.0,100.0,100.0), -1 );
         
         cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE);
         cv::imshow("Display window", image_to_display);
@@ -361,7 +357,7 @@ public:
     
     
     bool isNodeAccessible (const myNode& tn) {
-        if ( tn.x<MIN_X || tn.x>MAX_X || tn.y<MIN_Y || tn.y>MAX_Y )  return (false);
+        if ( isLess_d(tn.x,MIN_X) || isGreater_d(tn.x,MAX_X) || isLess_d(tn.y,MIN_Y) || isGreater_d(tn.y,MAX_Y) )  return (false);
         bool insideObstacle = false;
         for (int a=0; a<OBS_RECT.size(); ++a)
             if ( OBS_RECT[a][0]<=tn.x && OBS_RECT[a][1]<=tn.y && OBS_RECT[a][2]>=tn.x && OBS_RECT[a][3]>=tn.y ) {
@@ -390,6 +386,17 @@ public:
                 }
         }
         return (true);
+    }
+    
+    // only for ThetaStar:
+    bool isSegmentFree (myNode &n1, myNode &n2, double* c) {
+        if (isEdgeAccessible(n1,n2)) {
+            double dx=n2.x-n1.x, dy=n2.y-n1.y;
+            *c = sqrt(dx*dx+dy*dy);
+            return (true);
+        }
+        else
+            return (false);
     }
     
     // -----------------------------------------------------------
@@ -581,7 +588,6 @@ public:
     // -------------------------------------------
     
     
-    
     void nodeEvent (myNode &n, unsigned int e) 
     {
         CvScalar col = cvScalar(0.0, 0.0, 0.0);;
@@ -601,7 +607,6 @@ public:
             if (!cameFromNull) {
                 
                 if ( !isEqual_d (n.G, n.dist()) ) {
-                    //printf("Distance mismatch! Expanded:%d, event:%d-%d-%d; dist=%f\n", self_p->Expanded, e,EXPANDED,(e|EXPANDED), fabs(self_p->G - dist));
                     #if defined(S_STAR_ALGORITHM) && _YAGSBPL_DEBUG>1
                     printf("*** Distance mismatch! diff=%f\n", fabs(n.G - n.dist()));
                     n.CameFromSimplex->print ("Came-from simplex: ");
@@ -659,7 +664,7 @@ public:
                 cv::line(image_to_display, 
                     cv_plot_coord(n.x+nodeRad*nx, n.y+nodeRad*ny), 
                     cv_plot_coord((*its).first->x-nodeRad*nx, (*its).first->y-nodeRad*ny), 
-                        cvScalar(200.0,200.0,200.0), 0.1*PLOT_SCALE);
+                        cvScalar(200.0,200.0,200.0), LINE_THICKNESS*PLOT_SCALE);
             }
         }
         
@@ -668,7 +673,7 @@ public:
             std::cout << std::flush;
             if (SAVE_IMG_INTERVAL>0 && ExpandCount%SAVE_IMG_INTERVAL == 0) {
                 char imgFname[1024];
-                sprintf(imgFname, "%soutfiles/%s%05d.png", exec_path.c_str(), imgPrefix.str().c_str(), ExpandCount);
+                sprintf(imgFname, "%s../files-out/%s%05d.png", program_path.c_str(), imgPrefix.str().c_str(), ExpandCount);
                 cv::imwrite (imgFname, image_to_display);
             }
             cvWaitKey(1); //(10);
@@ -694,8 +699,10 @@ public:
 int main(int argc, char *argv[])
 {
     // set some global variables
-    std::string program_fName (argv[0]);
-    exec_path = program_fName.substr(0, program_fName.find_last_of("/\\")+1);
+    compute_program_path();
+    
+    printf (_BOLD _YELLOW "Note: " YELLOW_ BOLD_ "Using algorithm " _YELLOW  MAKESTR(_DOSL_ALGORITHM)  YELLOW_ 
+                ". Run 'make' to recompile with a different algorithm.\n");
     
     // DOSL
     SearchProblem test_search_problem;
@@ -703,47 +710,53 @@ int main(int argc, char *argv[])
     // Run
     test_search_problem.search();
     
-    // Get path
-    auto path = test_search_problem.reconstructPath (test_search_problem.goalNode);
+    // save image before drawing path
+    if (SAVE_IMG_INTERVAL>0) {
+        char imgFname[1024];
+        sprintf(imgFname, "%s../files-out/%s%05d.png", program_path.c_str(), 
+                            test_search_problem.imgPrefix.str().c_str(), test_search_problem.ExpandCount);
+        cv::imwrite (imgFname, test_search_problem.image_to_display);
+    }
     
+    // -------------------------------
+    // Get path
+    std::vector <myNode*> path = test_search_problem.reconstructPointerPath (test_search_problem.goalNode);
+    
+    // print/plot path
     printf("\nPath: ");
     #if VERTEX_COLORS
     CvScalar path_color = cvScalar(250.0,100.0,100.0);
     #else
     CvScalar path_color = cvScalar(200.0,100.0,250.0);
     #endif
-    myNode thisPt= myNode(0.0,0.0), lastPt;
-    std::vector<myNode> allPts;
-    for (int a=path.size()-1; a>=0; --a) {
-        lastPt = thisPt;
-        thisPt = myNode(0.0, 0.0);
-        for (auto it=path[a].begin(); it!=path[a].end(); ++it) {
-            thisPt.x += it->second * it->first->x;
-            thisPt.y += it->second * it->first->y;
-        }
-        allPts.push_back (thisPt);
-        printf ("[%f,%f]; ", thisPt.x, thisPt.y);
+    
+    double cost = 0.0;
+    for (int a=path.size()-1; a>0; --a) {
+        printf ("[%f,%f]; ", path[a]->x, path[a]->y);
+        cost += sqrt (pow(path[a]->x - path[a-1]->x, 2.0) + pow(path[a]->y - path[a-1]->y, 2.0));
         #if _VIS
         cv::line (test_search_problem.image_to_display, 
-                test_search_problem.cv_plot_coord(thisPt.x,thisPt.y), test_search_problem.cv_plot_coord(lastPt.x,lastPt.y), 
-                            path_color, 2);
+                    test_search_problem.cv_plot_coord(path[a]->x,path[a]->y), 
+                        test_search_problem.cv_plot_coord(path[a-1]->x,path[a-1]->y), 
+                            path_color, 4.0*test_search_problem.LINE_THICKNESS*test_search_problem.PLOT_SCALE);
         #endif
     }
+    printf ("[%f,%f]; ", path[0]->x, path[0]->y);
     #if _VIS
-    for (int a=allPts.size()-1; a>=0; --a)
+    for (int a=path.size()-1; a>=0; --a)
         cv::circle (test_search_problem.image_to_display, 
-                test_search_problem.cv_plot_coord(allPts[a].x,allPts[a].y),
+                test_search_problem.cv_plot_coord(path[a]->x,path[a]->y),
                     test_search_problem.VERTEX_SIZE*test_search_problem.PLOT_SCALE*0.5, cvScalar(255.0,0.0,0.0), -1, 8);
     #endif
     
-    printf("\n");
+    printf("\nTotal cost = %f\n", cost);
     cv::imshow("Display window", test_search_problem.image_to_display);
     
     test_search_problem.clear();
     
     if (SAVE_IMG_INTERVAL != 0) {
         char imgFname[1024];
-        sprintf(imgFname, "%soutfiles/%s_path.png", exec_path.c_str(), test_search_problem.imgPrefix.str().c_str());
+        sprintf(imgFname, "%s../files-out/%s_path.png", program_path.c_str(), test_search_problem.imgPrefix.str().c_str());
         cv::imwrite(imgFname, test_search_problem.image_to_display);
     }
     cvWaitKey();

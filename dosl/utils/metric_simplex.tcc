@@ -1,7 +1,7 @@
 #ifndef __DOSL_METRIC_SIMPLEX_TCC__ 
 #define __DOSL_METRIC_SIMPLEX_TCC__ 
 
-// constants for comparing values
+// constants for comparing values // TODO: Replace with macros from 'double_utils' and make scale-independent
 #define _MS_DOUBLE_EPS     1e-4    // make smaller if grid edge length is less than O(1)
 #define _MS_DOUBLE_EPS_SQ  (_MS_DOUBLE_EPS*_MS_DOUBLE_EPS)
 
