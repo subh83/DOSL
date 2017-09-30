@@ -41,21 +41,25 @@
 !examples-dosl/
 !examples-dosl/makefile
 
-!examples-dosl/src-test/
-!examples-dosl/src-test/*.cpp
+!examples-dosl/src/
 
-!examples-dosl/src-simple/
-!examples-dosl/src-simple/*.cpp
+!examples-dosl/src/test/
+!examples-dosl/src/test/*.cpp
 
-!examples-dosl/src-advanced/
-!examples-dosl/src-advanced/*.cpp
+!examples-dosl/src/simple/
+!examples-dosl/src/simple/*.cpp
 
-!examples-dosl/files-expt/
-!examples-dosl/files-expt/*.png
-!examples-dosl/files-expt/*.json
+!examples-dosl/src/advanced/
+!examples-dosl/src/advanced/*.cpp
 
-!examples-dosl/files-out/
-!examples-dosl/files-out/.blank
+!examples-dosl/files/
+
+!examples-dosl/files/expt/
+!examples-dosl/files/expt/*.png
+!examples-dosl/files/expt/*.json
+
+!examples-dosl/files/out/
+!examples-dosl/files/out/.blank
 
 !examples-dosl/bin/
 !examples-dosl/bin/.blank

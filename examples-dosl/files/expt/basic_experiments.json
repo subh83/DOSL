@@ -1,0 +1,20 @@
+{
+    'L457_expt1':
+    {  environment: { pixmap: "L457.png" },    // obstacle map
+        start:     [60, 60],
+        goal:      [200, 300],
+        plot_options: { plot_scale: 2.0,
+                        line_thickness: 4.0},
+        top_class: 2,                           // only to be used by 'homotopy2d_PathPlanning'
+    },
+
+    'empty1':
+    {  environment: { width: 500, height: 300 },    // empty map
+        start:     [400, 60],
+        goal:      [20, 280],
+        plot_options: { plot_scale: 2.0,
+                        line_thickness: 4.0},
+        top_class: 1,
+    },
+ 
+}

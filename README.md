@@ -30,7 +30,7 @@ Discrete Optimal Search Library (DOSL)
 ```
 
 ### Description:
-"Discrete Optimal Search Library (DOSL)" is a fast, efficient and easy-to-use library for construction of discrete representation (e.g., graph or a simplicial complex) and search (e.g., using algorithms like A-star, Dijkstra's, etc.) library written in C++, designed specifically for searching medium to large scale graphs for optimal paths. 
+"Discrete Optimal Search Library (DOSL)" is a fast, efficient and easy-to-use library for construction of discrete representation (e.g., a graph or a simplicial complex) and search (e.g., using algorithms like A-star, Dijkstra's, etc.) library written in C++, designed specifically for searching medium to large scale graphs or complexes for optimal paths. 
 
 *******************************************************************************
 
@@ -67,7 +67,7 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
 - Multiple start nodes for wave-front expansion type graph exploration.
 - Event handling (i.e., call to user-defined functions upon generation, g-score updating or expansion of a node during the search process).
 - Other forms of discrete representations, such as simplicial complexes (S-star algorithm), is supported by specific planners.
-- Ability to write new planners with much ease. Comes with a weighted A-star (that includes Dijkstra's and normal A-star), Theta-star and S-star planner by default.
+- Ability to write new planners with ease. Comes with a weighted A-star (that includes Dijkstra's and normal A-star), Theta-star and S-star planner by default.
 
 ### New:
 * New planner with an implementation of the S-star search algorithm for finding optimal path through simplicial complexes (https://arxiv.org/abs/1607.07009)
@@ -92,18 +92,13 @@ Quick compilation of the simple examples in the `examples-dosl` folder (this wil
     cd examples-dosl
     make simple
 ```
-Then to run an example program:
+Alternatively, run  `make advanced`  or  `make all`.
+All executables are created in the `examples-dosl/bin` folder. 
+
+Then, to run an example program:
 ```
     ./bin/<program_name>
 ```
-
-******************************************************************************************
-
-Documentation:
---------------
-
-DOSL wiki is under construction: https://github.com/subh83/DOSL/wiki
-
 
 ******************************************************************************************
 
@@ -170,10 +165,8 @@ public:
            graph structure and search parameters. */
     
     /* Prototype for 'AStar::Algorithm<>::getSuccessors':
-         template <class nodeType, class costType> class AStar::Algorithm {
-             virtual void getSuccessors 
-                 (NodeType& n, std::vector<NodeType>* const s, std::vector<CostType>* const s);
-         }
+           virtual void getSuccessors 
+               (NodeType& n, std::vector<NodeType>* const s, std::vector<CostType>* const s);
        Description: Takes in a vertex, n, and returns its neighbors/successors, s, 
                     and the costs/distances of the edges, c. This defines graph connectivity. */
     
@@ -193,8 +186,7 @@ public:
     }
     
     /* Prototype for 'AStar::Algorithm<>::getStartNodes':
-        template <class nodeType, class costType> class AStar::Algorithm 
-            { virtual std::vector<NodeType> getStartNodes (void); }
+           virtual std::vector<NodeType> getStartNodes (void);
        Returns the list of vertices(s) to start the search with. */
     
     std::vector<myNode> getStartNodes (void) {
@@ -207,8 +199,7 @@ public:
     }
     
     /* Prototype for 'AStar::Algorithm<>::stopSearch':
-        template <class nodeType, class costType> class AStar::Algorithm 
-            { virtual bool stopSearch (NodeType& n); }
+           virtual bool stopSearch (NodeType& n);
        Description: Determines whether to stop the search when 'n' is being expanded.
        Optional -- If not provided, search will terminate only when heap is empty 
                    (i.e., all nodes in graph have been expanded). */
@@ -247,9 +238,13 @@ For common types of graph, encaptulations can be used to hide some of the detail
 
 __Single shortest path planning in an OpenCV image:__
 
-Include `dosl/encapsulations/cvPathPlanner.tcc` in your code. Then you can compute the optimal path from a `start` pixel to a `goal` pixel in a OpenCV image `obs_map` using the constructor
+Include `dosl/encapsulations/cvPathPlanner.tcc` in your code. Then you can compute the optimal path from a `start` pixel to a `goal` pixel in a OpenCV image `obs_map` by creating a variable of type `cvPathPlanner` using the constructor
 ```C++
-cvPathPlanner::cvPathPlanner (cv::Mat obs_map, cv::Point start, cv::Point goal, bool vis=false)
+cvPathPlanner::cvPathPlanner (cv::Mat obs_map, cv::Point start, cv::Point goal, bool vis=false);
+```
+and then calling the member
+```C++
+void cvPathPlanner::find_path (void);
 ```
 Set `vis` to `true` to visualize the search.
 The shortest path is stored in the member `std::vector<cv::Point> path`. You can directly draw the path in a matrix using either of the following functions:
@@ -260,9 +255,13 @@ cv::Mat cvPathPlanner::draw_path (CvScalar color=cvScalar(0.0,0.0,255.0), int th
 
 __Multiple shortest paths in different topological classes in an OpenCV image:__
 
-Include `dosl/encapsulations/cvMulticlassPathPlanner.tcc` in your code. Then compute the paths using the constructor
+Include `dosl/encapsulations/cvMulticlassPathPlanner.tcc` in your code. Then create an instance of `cvMulticlassPathPlanner` using the constructor
 ```C++
 cvMulticlassPathPlanner::cvMulticlassPathPlanner (cv::Mat obs_map, cv::Point start, cv::Point goal, int nPaths=1, bool vis=false, int obsSizeThresh=0)
+```
+and compute the paths using member
+```C++
+void cvMulticlassPathPlanner::find_paths (void);
 ```
 `obsSizeThresh` is the minimum size of obstacle that would create multiple classes of paths.
 The shortest path is stored in the member `std::vector< std::vector< cv::Point > > paths`. You can directly draw the path in a matrix using either of the following functions:
@@ -270,6 +269,13 @@ The shortest path is stored in the member `std::vector< std::vector< cv::Point >
 void cvMulticlassPathPlanner::draw_paths (cv::Mat& in_map, cv::Mat& out_map, std::vector<CvScalar> colors=std::vector<CvScalar>(), int thickness=1, int lineType=8, int shift=0);
 cv::Mat cvMulticlassPathPlanner::draw_paths (std::vector<CvScalar> colors=std::vector<CvScalar>(), int thickness=1, int lineType=8, int shift=0)
 ```
+******************************************************************************************
+
+Documentation:
+--------------
+
+DOSL wiki is under construction: https://github.com/subh83/DOSL/wiki
+
 
 *******************************************************************************
 

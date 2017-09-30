@@ -146,7 +146,17 @@ public:
     
     
     void find_paths (void) {
+        if (visualize && image_to_display.empty()) {
+            image_to_display = my_map.getCvMat (COLOR_MAP);
+            cv::resize (image_to_display, image_to_display, cv::Size(), PLOT_SCALE , PLOT_SCALE );
+            cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE);
+            cv::imshow("Display window", image_to_display);
+            //cv::waitKey(0);
+        }
+        
+        // ------------
         this->search();
+        // ------------
         
         for (int i=0; i<homotopyGoals.size(); ++i) {
             // get path
@@ -208,19 +218,12 @@ public:
         //imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "homotopy2d_";
         
         visualize = vis;
-        if (visualize) {
-            image_to_display = my_map.getCvMat (COLOR_MAP);
-            cv::resize (image_to_display, image_to_display, cv::Size(), PLOT_SCALE , PLOT_SCALE );
-            cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE);
-            cv::imshow("Display window", image_to_display);
-            //cv::waitKey(0);
-        }
         
         // Set planner variables
         this->AllNodesSet.HashTableSize = ceil(MAX_X - MIN_X + 1);
         
         // compute path
-        find_paths();
+        // find_paths();
     }
     
     // -----------------------------------------------------------

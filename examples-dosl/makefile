@@ -68,7 +68,7 @@ LIB_FOLDERS = -L/usr/local/lib
 BIN_FOLDER = bin
 
 # --------------------------------------------
-TEST_FOLDER=src-test
+TEST_FOLDER=src/test
 test: cv_test json_test matheval_test
 
 
@@ -97,7 +97,7 @@ VPATH = bin
 
 
 # --------------------------------------------
-SIMPLE_FOLDER=src-simple
+SIMPLE_FOLDER=src/simple
 simple:  minimal2d_PathPlanning_AStar  minimal2d_PathPlanning_AnyAlg  map2d_encapsulated_PathPlanning  homotopy2d_encapsulated_PathPlanning
 
 
@@ -123,7 +123,7 @@ homotopy2d_encapsulated_PathPlanning: cv_test
 
 
 # --------------------------------------------
-ADVANCED_FOLDER=src-advanced
+ADVANCED_FOLDER=src/advanced
 advanced:  demo2d_PathPlanning  map2d_PathPlanning  homotopy2d_PathPlanning  nonuniform2d_PathPlanning  robotArm_PathPlanning
 
 

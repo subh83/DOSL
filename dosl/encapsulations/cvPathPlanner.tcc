@@ -130,7 +130,17 @@ public:
     
     
     void find_path (void) {
+        if (visualize && image_to_display.empty()) {
+            image_to_display = my_map.getCvMat (COLOR_MAP);
+            cv::resize (image_to_display, image_to_display, cv::Size(), PLOT_SCALE , PLOT_SCALE );
+            cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE);
+            cv::imshow("Display window", image_to_display);
+            //cv::waitKey(0);
+        }
+        
+        // ------------
         this->search();
+        // ------------
         
         auto dosl_path = this->reconstructPath (goalNode);
         double cost = 0.0;
@@ -160,7 +170,8 @@ public:
     // -----------------------------------------------------------
     
     // Constructor
-    cvPathPlanner (cv::Mat obs_map, cv::Point start, cv::Point goal, bool vis=false)
+    cvPathPlanner (cv::Mat obs_map, cv::Point start, cv::Point goal,
+                        bool vis=false)
     {
         // int obsSizeThresh = 0; // MIN(obs_map.cols,obs_map.rows) / 4;
         my_map = cvParseMap2d (obs_map, false);
@@ -183,19 +194,12 @@ public:
         //imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "homotopy2d_";
         
         visualize = vis;
-        if (visualize) {
-            image_to_display = my_map.getCvMat (COLOR_MAP);
-            cv::resize (image_to_display, image_to_display, cv::Size(), PLOT_SCALE , PLOT_SCALE );
-            cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE);
-            cv::imshow("Display window", image_to_display);
-            //cv::waitKey(0);
-        }
         
         // Set planner variables
         this->AllNodesSet.HashTableSize = ceil(MAX_X - MIN_X + 1);
         
         // compute path
-        find_path();
+        // find_path();
     }
     
     // -----------------------------------------------------------
