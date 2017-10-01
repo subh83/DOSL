@@ -1,3 +1,6 @@
+# Discrete Optimal search Library (DOSL)
+# Makefile for compiling examples
+
 SHELL := /bin/bash
 
 # Change these if needed or pass as input parameter
