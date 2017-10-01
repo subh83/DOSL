@@ -1,9 +1,9 @@
 /** **************************************************************************************
 *                                                                                        *
 *    Part of                                                                             *
-*    Discrete Optimal Search Library (DOSL)                                              *
+*    Discrete Optimal search Library (DOSL)                                              *
 *    A template-based C++ library for discrete search                                    *
-*    Version 3.1                                                                         *
+*    Version 3.x                                                                         *
 *    ----------------------------------------------------------                          *
 *    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
 *                                                                                        *

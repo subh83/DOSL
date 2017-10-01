@@ -5,7 +5,7 @@
 *    A template-based C++ library for discrete search                                    *
 *    Version 3.x                                                                         *
 *    ----------------------------------------------------------                          *
-*    Copyright (C) 2016  Subhrajit Bhattacharya                                          *
+*    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
 *                                                                                        *
 *    This program is free software: you can redistribute it and/or modify                *
 *    it under the terms of the GNU General Public License as published by                *

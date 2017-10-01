@@ -1,7 +1,9 @@
 /** **************************************************************************************
 *                                                                                        *
-*    A Ridiculously Simple JSON parser for C++ (RSJp-cpp)                                *
-*    Version 1.0b                                                                        *
+*    Part of                                                                             *
+*    Discrete Optimal search Library (DOSL)                                              *
+*    A template-based C++ library for discrete search                                    *
+*    Version 3.x                                                                         *
 *    ----------------------------------------------------------                          *
 *    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
 *                                                                                        *

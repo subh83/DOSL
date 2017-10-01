@@ -1,7 +1,7 @@
 /** **************************************************************************************
 *                                                                                        *
 *    Part of                                                                             *
-*    Discrete Optimal Search Library (DOSL)                                              *
+*    Discrete Optimal search Library (DOSL)                                              *
 *    A template-based C++ library for discrete search                                    *
 *    Version 3.x                                                                         *
 *    ----------------------------------------------------------                          *
@@ -23,6 +23,7 @@
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
+
 #ifndef __DOSL_MACROS_CONSTANTS_TCC
 #define __DOSL_MACROS_CONSTANTS_TCC
 
