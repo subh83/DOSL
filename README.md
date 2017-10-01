@@ -30,7 +30,7 @@ Discrete Optimal Search Library (DOSL)
 ```
 
 ### Description:
-"Discrete Optimal Search Library (DOSL)" is a fast, efficient and easy-to-use library for construction of discrete representation (e.g., a graph or a simplicial complex) and search (e.g., using algorithms like A-star, Dijkstra's, etc.) library written in C++, designed specifically for searching medium to large scale graphs or complexes for optimal paths. 
+"Discrete Optimal Search Library (DOSL)" is a fast, efficient and easy-to-use library for construction of discrete representation (e.g., a graph or a simplicial complex) and search (e.g., using algorithms like A-star, Dijkstra's, etc.) library written in C++, designed specifically for searching medium to large scale graphs or simplicial complexes for optimal paths. 
 
 *******************************************************************************
 

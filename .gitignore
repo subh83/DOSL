@@ -67,6 +67,8 @@
 !examples-dosl/python/
 !examples-dosl/python/*.py
 
+# local include folder
+# --------------------
 
 !examples-dosl/include-local/
 !examples-dosl/include-local/*.h
