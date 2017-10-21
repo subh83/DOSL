@@ -1,34 +1,6 @@
 Discrete Optimal Search Library (DOSL)
 --------------------------------------
 
-```
-/** **************************************************************************************
-*                                                                                        *
-*    Part of                                                                             *
-*    Discrete Optimal Search Library (DOSL)                                              *
-*    A template-based C++ library for discrete search                                    *
-*    Version 3.x                                                                         *
-*    ----------------------------------------------------------                          *
-*    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
-*                                                                                        *
-*    This program is free software: you can redistribute it and/or modify                *
-*    it under the terms of the GNU General Public License as published by                *
-*    the Free Software Foundation, either version 3 of the License, or                   *
-*    (at your option) any later version.                                                 *
-*                                                                                        *
-*    This program is distributed in the hope that it will be useful,                     *
-*    but WITHOUT ANY WARRANTY; without even the implied warranty of                      *
-*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                       *
-*    GNU General Public License for more details <http://www.gnu.org/licenses/>.         *
-*                                                                                        *
-*                                                                                        *
-*    Contact:  subhrajit@gmail.com                                                       *
-*              https://www.lehigh.edu/~sub216/ , http://subhrajit.net/                   *
-*                                                                                        *
-*                                                                                        *
-*************************************************************************************** **/
-```
-
 ### Description:
 "Discrete Optimal Search Library (DOSL)" is a fast, efficient and easy-to-use library for construction of discrete representation (e.g., a graph or a simplicial complex) and search (e.g., using algorithms like A-star, Dijkstra's, etc.) library written in C++, designed specifically for searching medium to large scale graphs or simplicial complexes for optimal paths. 
 
@@ -92,7 +64,7 @@ Quick compilation of the simple examples in the `examples-dosl` folder (this wil
     cd examples-dosl
     make simple
 ```
-Alternatively, run  `make advanced`  or  `make all`.
+Alternatively, run  `make advanced`  or  `make all` (see `examples-dosl/makefile` for other make rules).
 All executables are created in the `examples-dosl/bin` folder. 
 
 Then, to run an example program:
@@ -333,3 +305,37 @@ Version history:
   hosted at https://github.com/subh83/YAGSBPL .
   YAGSBPL is now deprecated.
 
+
+
+*******************************************************************************
+
+License:
+--------
+
+```
+/** **************************************************************************************
+*                                                                                        *
+*    Part of                                                                             *
+*    Discrete Optimal Search Library (DOSL)                                              *
+*    A template-based C++ library for discrete search                                    *
+*    Version 3.x                                                                         *
+*    ----------------------------------------------------------                          *
+*    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
+*                                                                                        *
+*    This program is free software: you can redistribute it and/or modify                *
+*    it under the terms of the GNU General Public License as published by                *
+*    the Free Software Foundation, either version 3 of the License, or                   *
+*    (at your option) any later version.                                                 *
+*                                                                                        *
+*    This program is distributed in the hope that it will be useful,                     *
+*    but WITHOUT ANY WARRANTY; without even the implied warranty of                      *
+*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                       *
+*    GNU General Public License for more details <http://www.gnu.org/licenses/>.         *
+*                                                                                        *
+*                                                                                        *
+*    Contact:  subhrajit@gmail.com                                                       *
+*              https://www.lehigh.edu/~sub216/ , http://subhrajit.net/                   *
+*                                                                                        *
+*                                                                                        *
+*************************************************************************************** **/
+```

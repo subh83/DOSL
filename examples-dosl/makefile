@@ -166,6 +166,24 @@ all: test simple advanced
 
 # --------------------------------------------
 
+ALL_SAME_ALG_INTRO = "Using algorithm '\033[33m$(DOSL_ALGORITHM)\033[39m' for all (\033[37m\033[2mAvailable algorithms: $(DOSL_ALGORITHM_LIST)\033[21m\033[39m). \n"
+
+set_AStar:
+	@printf "$(eval DOSL_ALGORITHM = AStar)\n"; printf $(ALL_SAME_ALG_INTRO);
+all_AStar: set_AStar all
+
+
+set_ThetaStar:
+	@printf "$(eval DOSL_ALGORITHM = ThetaStar)\n"; printf $(ALL_SAME_ALG_INTRO);
+all_ThetaStar: set_ThetaStar all
+
+
+set_SStar:
+	@printf "$(eval DOSL_ALGORITHM = SStar)\n"; printf $(ALL_SAME_ALG_INTRO);
+all_SStar: set_SStar all
+
+# --------------------------------------------
+
 run:
 	@for filename in bin/* ; do \
          printf "\n\nNow running \033[34m./$$filename\033[39m ...\n" ; \
