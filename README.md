@@ -240,34 +240,34 @@ __Single shortest path planning in an OpenCV image:__
 
 Include `dosl/encapsulations/cvPathPlanner.tcc` in your code. Then you can compute the optimal path from a `start` pixel to a `goal` pixel in a OpenCV image `obs_map` by creating a variable of type `cvPathPlanner` using the constructor
 ```C++
-cvPathPlanner::cvPathPlanner (cv::Mat obs_map, cv::Point start, cv::Point goal, bool vis=false);
+cvPathPlanner::cvPathPlanner (cv::Mat obs_map, ...);
 ```
 and then calling the member
 ```C++
-void cvPathPlanner::find_path (void);
+void cvPathPlanner::find_path (cv::Point start, cv::Point goal, bool vis=false);
 ```
 Set `vis` to `true` to visualize the search.
 The shortest path is stored in the member `std::vector<cv::Point> path`. You can directly draw the path in a matrix using either of the following functions:
 ```C++
-void cvPathPlanner::draw_path (cv::Mat& in_map, cv::Mat& out_map, CvScalar color=cvScalar(0.0,0.0,255.0), int thickness=1, int lineType=8, int shift=0);
-cv::Mat cvPathPlanner::draw_path (CvScalar color=cvScalar(0.0,0.0,255.0), int thickness=1, int lineType=8, int shift=0);
+void cvPathPlanner::draw_path (cv::Mat& in_map, cv::Mat& out_map, ...);
+cv::Mat cvPathPlanner::draw_path (...);
 ```
 
 __Multiple shortest paths in different topological classes in an OpenCV image:__
 
 Include `dosl/encapsulations/cvMulticlassPathPlanner.tcc` in your code. Then create an instance of `cvMulticlassPathPlanner` using the constructor
 ```C++
-cvMulticlassPathPlanner::cvMulticlassPathPlanner (cv::Mat obs_map, cv::Point start, cv::Point goal, int nPaths=1, bool vis=false, int obsSizeThresh=0)
+cvMulticlassPathPlanner::cvMulticlassPathPlanner (cv::Mat obs_map, ...)
 ```
 and compute the paths using member
 ```C++
-void cvMulticlassPathPlanner::find_paths (void);
+void cvMulticlassPathPlanner::find_paths (cv::Point start, cv::Point goal, int nPaths=1, bool vis=false, int obsSizeThresh=0);
 ```
 `obsSizeThresh` is the minimum size of obstacle that would create multiple classes of paths.
 The shortest path is stored in the member `std::vector< std::vector< cv::Point > > paths`. You can directly draw the path in a matrix using either of the following functions:
 ```C++
-void cvMulticlassPathPlanner::draw_paths (cv::Mat& in_map, cv::Mat& out_map, std::vector<CvScalar> colors=std::vector<CvScalar>(), int thickness=1, int lineType=8, int shift=0);
-cv::Mat cvMulticlassPathPlanner::draw_paths (std::vector<CvScalar> colors=std::vector<CvScalar>(), int thickness=1, int lineType=8, int shift=0)
+void cvMulticlassPathPlanner::draw_paths (cv::Mat& in_map, cv::Mat& out_map, ...);
+cv::Mat cvMulticlassPathPlanner::draw_paths (...)
 ```
 ******************************************************************************************
 
@@ -321,6 +321,8 @@ Bibtex entry:
 
 Version history:
 ---------------
+
+* Nov 2018: version 3.26 released: Some bug fixes. Changes made to encapsulation member functions.
 
 * Sep 2017: version 3.25 released: Added ThetaStar and SStar search algorithms; Organized components of algorithm under nested classes; More extensive and organized examples grouped into "simple" and "advanced"; Simple encapsulations for path planning in OpenCV matrices added.
 

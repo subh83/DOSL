@@ -27,7 +27,7 @@
 #ifndef __DOSL_MAIN_
 #define __DOSL_MAIN_
 
-#define _DOSL_VERSION 3.25
+#define _DOSL_VERSION 3.26
 #include "utils/back_compatibility.hpp"
 
 // String joining macro
