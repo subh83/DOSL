@@ -606,9 +606,13 @@ template <class nodePointerType, class doubleType, class doubleVecType>
         printf(". G-score at inPoint: %f \n", inPathPoint.G);
         ContainingSimplex->print("ContainingSimplex: ");
     }
-    if (TO_BOOL(ContainingSimplex->simplex_computation_failure)) // ContainingSimplex is invalid
+    if (TO_BOOL(ContainingSimplex->simplex_computation_failure)) { // ContainingSimplex is invalid
+        if (_dosl_verbose_on(0)) {
+            _dosl_printf("simplex_computation_failure=%d,%s", 
+                ContainingSimplex->simplex_computation_failure, uint_to_binary(ContainingSimplex->simplex_computation_failure));
+        }
         return (PathPointType());
-    
+    }
     
     std::unordered_set<MetricSimplexType*> attached_simplices = 
                     getAllAttachedMaximalSimplices (ContainingSimplex, //COMPUTE_INCREMENTAL_QUANTITIES 

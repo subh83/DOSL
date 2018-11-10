@@ -1,11 +1,9 @@
 /** **************************************************************************************
 *                                                                                        *
-*    Part of                                                                             *
-*    Discrete Optimal search Library (DOSL)                                              *
-*    A template-based C++ library for discrete search                                    *
-*    Version 3.x                                                                         *
+*    A Ridiculously Simple JSON Parser for C++ (RSJp-cpp)                                *
+*    Version 2.0                                                                         *
 *    ----------------------------------------------------------                          *
-*    Copyright (C) 2017  Subhrajit Bhattacharya                                          *
+*    Copyright (C) 2018  Subhrajit Bhattacharya                                          *
 *                                                                                        *
 *    This program is free software: you can redistribute it and/or modify                *
 *    it under the terms of the GNU General Public License as published by                *
@@ -31,7 +29,8 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
+#include <utility>
 #include <iostream>
 
 
@@ -43,68 +42,26 @@ char RSJarraydelimiter = ',';
 std::vector<char const*> RSJbrackets = {RSJobjectbrackets, RSJarraybrackets};
 std::vector<char const*> RSJstringquotes = {"\"\"", "''"};
 char RSJcharescape = '\\';
-
 std::string RSJlinecommentstart = "//";
 
-// ============================================================
+std::string RSJprinttab = "    ";
 
-class RSJresource;
-/* Use: RSJresource("RSJ_string_data").as<RSJobject>()["keyName"].as<RSJarray>()[2].as<int>()
-        RSJresource("RSJ_string_data")["keyName"][2].as<int>()  */
-
-// Helper preprocessor directives
-#define rsjObject  as<RSJobject>()
-#define rsjArray   as<RSJarray>()
-#define rsjAs(t)   as<t>()
-
-typedef std::map <std::string,RSJresource>    RSJobject;
-typedef std::vector <RSJresource>             RSJarray;
-
-class RSJresource {
-private:
-    // main data
-    std::string data; // can be object, vector or leaf data
-    bool _exists;      // whether the RSJ resource exists.
-    
-    // parsed data
-    RSJobject parsed_obj;
-    RSJarray parsed_array;
-    
-public:
-    // constructor
-    RSJresource () : _exists (false) { } // no data field.
-    
-    RSJresource (std::string str) : data (str), _exists (true) {
-        if (data.empty()) _exists = false;
-        else _exists = true;
-    }
-    
-    RSJresource (std::istream& is) {
-        data = std::string ( (std::istreambuf_iterator<char>(is)), (std::istreambuf_iterator<char>()) );
-        if (data.empty()) _exists = false;
-        else _exists = true;
-    }
-    
-    // access raw data
-    std::string& raw_data (void) { return (data); }
-    bool exists (void) { return (_exists); }
-    
-    // as
-    template <class dataType>
-    dataType as (const dataType& def = dataType()) { // specialized outside class declaration
-        if (!exists()) return (def);
-        return dataType (data); // default behavior for unknown types: invoke 'dataType(std::string)'
-    }
-    
-    // opertor[]
-    RSJresource& operator[] (std::string key); // object
-    RSJresource& operator[] (int indx); // array
-};
+enum RSJresourceType { RSJ_UNINITIATED, RSJ_UNKNOWN, RSJ_OBJECT, RSJ_ARRAY, RSJ_LEAF };
 
 // ============================================================
 // Direct string manipulation functions
 
-std::string strtrim (std::string str, std::string chars=" \n\r", std::string opts="lr") {
+std::string to_string (RSJresourceType rt) {
+    switch (rt) {
+        case RSJ_UNINITIATED: return("RSJ_UNINITIATED");
+        case RSJ_UNKNOWN: return("RSJ_UNKNOWN");
+        case RSJ_OBJECT: return("RSJ_OBJECT");
+        case RSJ_ARRAY: return("RSJ_ARRAY");
+        case RSJ_LEAF: return("RSJ_LEAF");
+    }
+}
+
+std::string strtrim (std::string str, std::string chars=" \t\n\r", std::string opts="lr") {
     if (str.empty()) return(str);
     
     if (opts.find('l')!=std::string::npos) { // left trim
@@ -147,7 +104,7 @@ int is_bracket (char c, std::vector<char const*>& bracks, int indx=0) {
     return (-1);
 }
 
-std::vector<std::string> split_RSJ_array (std::string str) {
+std::vector<std::string> split_RSJ_array (const std::string& str) { // TODO: Make efficient. This function is speed bottleneck.
     // splits, while respecting brackets and escapes
     std::vector<std::string> ret;
     
@@ -238,61 +195,363 @@ std::vector<std::string> split_RSJ_array (std::string str) {
 }
 
 
+std::string insert_tab_after_newlines (std::string str) {
+    for (int a=0; a<str.length(); ++a)
+        if (str[a]=='\n') {
+            str.insert (a+1, RSJprinttab);
+            a += RSJprinttab.length();
+        }
+    return (str);
+}
+
+// ============================================================
+
+// forward declarations
+class RSJparsedData;
+class RSJresource;
+
+// Objet and array typedefs
+typedef std::unordered_map <std::string,RSJresource>    RSJobject;
+typedef std::vector <RSJresource>                       RSJarray;
+
+// ------------------------------------
+// Main classes
+
+class RSJresource {
+/* Use: RSJresource("RSJ_string_data").as<RSJobject>()["keyName"].as<RSJarray>()[2].as<int>()
+        RSJresource("RSJ_string_data")["keyName"][2].as<int>()  */
+private:
+    // main data
+    std::string data; // can be object, vector or leaf data
+    bool _exists;      // whether the RSJ resource exists.
+    
+    // parsed data
+    RSJparsedData* parsed_data_p;
+    
+public:
+    // constructor
+    RSJresource () : _exists (false), parsed_data_p (NULL) { } // no data field.
+    
+    RSJresource (std::string str) : data (str), _exists (true), parsed_data_p (NULL) { }
+    RSJresource (const char* str) : RSJresource(std::string(str)) { }
+    
+    // other convertion
+    template <class dataType>
+    RSJresource (dataType d) : RSJresource(std::to_string(d)) { }
+    
+    // read from file and stream
+    RSJresource (std::istream& is) : _exists (true), parsed_data_p (NULL) {
+        data = std::string ( (std::istreambuf_iterator<char>(is)), (std::istreambuf_iterator<char>()) );
+    }
+    RSJresource (std::ifstream& ifs) : _exists (true), parsed_data_p (NULL) {
+        std::istream& is = ifs;
+        data = std::string ( (std::istreambuf_iterator<char>(is)), (std::istreambuf_iterator<char>()) );
+    }
+    
+    // free allocated memory for parsed data
+    ~RSJresource();
+    
+    // deep copy
+    RSJresource (const RSJresource& r);
+    RSJresource& operator= (const RSJresource& r);
+    
+    // ------------------------------------
+    // parsers
+    RSJresourceType parse (bool force=false);
+    void parse_full (bool force=false, int* parse_count_for_verbose_p=NULL); // recursively parse the entire JSON text
+    RSJobject& as_object (bool force=false);
+    RSJarray& as_array (bool force=false);
+    
+    // ------------------------------------
+    
+    // access raw data and other attributes
+    int size(void);
+    std::string& raw_data (void) { return (data); }
+    bool exists (void) { return (_exists); }
+    bool is_parsed (void) { return (parsed_data_p!=NULL); }
+    RSJresourceType type (void);
+    std::string print (bool print_comments=false, bool update_data=true);
+    
+    // opertor[]
+    RSJresource& operator[] (std::string key); // object
+    RSJresource& operator[] (int indx); // array
+    
+    // ------------------------------------
+    
+    // as
+    template <class dataType>
+    dataType as (const dataType& def = dataType()) { // specialized outside class declaration
+        if (!exists()) return (def);
+        return dataType (data); // default behavior for unknown types: invoke 'dataType(std::string)'
+    }
+    
+    // as_vector
+    template <class dataType, class vectorType=std::vector<dataType> > // vectorType should have push_back method
+    vectorType as_vector (const vectorType& def = vectorType());
+    
+    // as_map
+    template <class dataType, class mapType=std::unordered_map<std::string,dataType> > // mapType should have operator[] defined
+    mapType as_map (const mapType& def = mapType());    
+};
+
+// ------------------------------------------------------------
+
+class RSJparsedData {
+public:
+    RSJobject object;
+    RSJarray array;
+    
+    RSJresourceType type;
+    RSJparsedData() : type(RSJ_UNKNOWN) {}
+    
+    // parser
+    void parse (const std::string& data, RSJresourceType typ = RSJ_UNKNOWN) {
+        std::string content = strtrim(data);
+        
+        if (typ==RSJ_OBJECT || typ==RSJ_UNKNOWN) {
+            // parse as object:
+            content = strtrim (strtrim (content, " {", "l" ), " }", "r" );
+            if (content.length() != data.length()) { // a valid object
+                std::vector<std::string> nvPairs = split_RSJ_array (content);
+                for (int a=0; a<nvPairs.size(); ++a) {
+                    std::size_t assignmentPos = nvPairs[a].find (RSJobjectassignment);
+                    object.insert (make_pair( 
+                                        strip_outer_quotes (nvPairs[a].substr (0,assignmentPos) ) ,
+                                        RSJresource (strtrim (nvPairs[a].substr (assignmentPos+1) ) )
+                               ) );
+                }
+                if (object.size() > 0) {
+                    type = RSJ_OBJECT;
+                    return;
+                }
+            }
+        }
+        
+        if (typ==RSJ_ARRAY || typ==RSJ_UNKNOWN) {
+            // parse as array
+            content = strtrim (strtrim (content, " [", "l" ), " ]", "r" );
+            if (content.length() != data.length()) { // a valid array
+                std::vector<std::string> nvPairs = split_RSJ_array (content);
+                for (int a=0; a<nvPairs.size(); ++a) 
+                    array.push_back (RSJresource (strtrim (nvPairs[a]) ) );
+                if (array.size() > 0) {
+                    type = RSJ_ARRAY;
+                    return;
+                }
+            }
+        }
+        
+        if (typ==RSJ_UNKNOWN)
+            type = RSJ_LEAF;
+    }
+    
+    
+    // remove non-existing items inserted due to accessing
+    int cleanup(void) {
+    
+        if (type==RSJ_OBJECT) {
+            bool found = true;
+            while (found) {
+                found = false;
+                for (auto it=object.begin(); it!=object.end(); ++it)
+                    if (!(it->second.exists())) {
+                        object.erase(it);
+                        found = true;
+                        break; // break for loop since it is now invalid
+                    }
+            }
+            return (object.size());
+        }
+        
+        if (type==RSJ_ARRAY) { // erases only the non-existent elements at the tail
+            while (!(array[array.size()-1].exists()))
+                array.pop_back();
+            return (array.size());
+        }
+        
+        if (type==RSJ_LEAF)
+            return (1);
+        
+        return (0);
+    }
+    
+    // size
+    int size(void) { return (cleanup()); }
+};
+
+
+// ------------------------------------------------------------
+// RSJresource member functions
+
+RSJresource::~RSJresource (){
+    if (parsed_data_p) delete parsed_data_p;
+}
+
+RSJresource::RSJresource (const RSJresource& r) {
+    data=r.data;
+    _exists = r._exists;
+    if(r.parsed_data_p) parsed_data_p = new RSJparsedData(*(r.parsed_data_p));
+    else parsed_data_p = NULL;
+}
+
+RSJresource& RSJresource::operator= (const RSJresource& r) {
+    data=r.data;
+    _exists = r._exists;
+    if(r.parsed_data_p) parsed_data_p = new RSJparsedData(*(r.parsed_data_p));
+    else parsed_data_p = NULL;
+    return *this;
+}
+
+int RSJresource::size (void) {
+    parse();
+    return (parsed_data_p->size());
+}
+
+RSJresourceType RSJresource::type (void) {
+    if (!exists()) return (RSJ_UNINITIATED);
+    parse(); // parse if not parsed
+    return (parsed_data_p->type);
+}
+
+std::string RSJresource::print (bool print_comments, bool update_data) {
+    if (exists()) {
+        std::string ret;
+        parse(); // parse if not parsed
+        parsed_data_p->cleanup();
+        
+        if (parsed_data_p->type==RSJ_OBJECT) {
+            ret = "{\n";
+            for (auto it=parsed_data_p->object.begin(); it!=parsed_data_p->object.end(); ++it) {
+                ret += RSJprinttab + "'" + it->first + "': " + insert_tab_after_newlines( it->second.print (print_comments, update_data) );
+                if (std::next(it) != parsed_data_p->object.end()) ret += ",";
+                if (print_comments)
+                    ret += " // " + to_string(it->second.type());
+                ret += "\n";
+            }
+            ret += "}";
+        }
+        else if (parsed_data_p->type==RSJ_ARRAY) {
+            ret = "[\n";
+            for (auto it=parsed_data_p->array.begin(); it!=parsed_data_p->array.end(); ++it) {
+                ret += RSJprinttab + insert_tab_after_newlines( it->print (print_comments, update_data) );
+                if (std::next(it) != parsed_data_p->array.end()) ret += ",";
+                if (print_comments)
+                    ret += " // " + to_string(it->type());
+                ret += "\n";
+            }
+            ret += "]";
+        }
+        else // RSJ_LEAF or RSJ_UNKNOWN
+             ret = strtrim (data);
+        
+        if (update_data) data = ret;
+        return (ret);
+    }
+    else
+        return ("");
+}
+
+// Parsers
+
+RSJresourceType RSJresource::parse (bool force) {
+    if (!parsed_data_p)  parsed_data_p = new RSJparsedData;
+    if (parsed_data_p->type==RSJ_UNKNOWN || force)  parsed_data_p->parse (data, RSJ_UNKNOWN);
+    return (parsed_data_p->type);
+}
+
+void RSJresource::parse_full (bool force, int* parse_count_for_verbose_p) {
+    if (!parsed_data_p)  parsed_data_p = new RSJparsedData;
+    if (parsed_data_p->type==RSJ_UNKNOWN || force)  parsed_data_p->parse (data, RSJ_UNKNOWN);
+    // verbose
+    if (parse_count_for_verbose_p) {
+        (*parse_count_for_verbose_p)++;
+        if ( (*parse_count_for_verbose_p) % 100 == 0)
+            std::cout << "parse_full: " << (*parse_count_for_verbose_p) << " calls." << std::endl;
+    }
+    // recursive parse children if not already parsed
+    if (parsed_data_p->type==RSJ_OBJECT) 
+        for (auto it=parsed_data_p->object.begin(); it!=parsed_data_p->object.end(); ++it)
+            it->second.parse_full (force, parse_count_for_verbose_p);
+    else if (parsed_data_p->type==RSJ_ARRAY)
+        for (auto it=parsed_data_p->array.begin(); it!=parsed_data_p->array.end(); ++it) 
+            it->parse_full (force, parse_count_for_verbose_p);
+}
+
+RSJobject& RSJresource::as_object (bool force) {
+    if (!parsed_data_p)  parsed_data_p = new RSJparsedData;
+    if (parsed_data_p->type==RSJ_UNKNOWN || force)  parsed_data_p->parse (data, RSJ_OBJECT);
+    return (parsed_data_p->object);
+}
+
+RSJarray& RSJresource::as_array (bool force) {
+    if (!parsed_data_p)  parsed_data_p = new RSJparsedData;
+    if (parsed_data_p->type==RSJ_UNKNOWN || force)  parsed_data_p->parse (data, RSJ_ARRAY);
+    return (parsed_data_p->array);
+}
+
+// special 'as':
+
+template <class dataType, class vectorType>
+vectorType RSJresource::as_vector (const vectorType& def) {
+    if (!exists()) return (def);
+    vectorType ret;
+    as_array();
+    for (auto it=parsed_data_p->array.begin(); it!=parsed_data_p->array.end(); ++it)
+        ret.push_back (it->as<dataType>());
+    return (ret);
+}
+
+template <class dataType, class mapType>
+mapType RSJresource::as_map (const mapType& def) {
+    if (!exists()) return (def);
+    mapType ret;
+    as_object();
+    for (auto it=parsed_data_p->object.begin(); it!=parsed_data_p->object.end(); ++it)
+        ret[it->first] = it->second.as<dataType>();
+    return (ret);
+}
+
 // ============================================================
 // Specialized .as() member functions
 
+// Helper preprocessor directives
+#define rsjObject  as<RSJobject>()
+#define rsjArray   as<RSJarray>()
+#define rsjAs(t)   as<t>()
+
+
 // RSJobject
 template <>
-std::map <std::string,RSJresource>  RSJresource::as<RSJobject> (const RSJobject& def) {
+RSJobject RSJresource::as<RSJobject> (const RSJobject& def) { // returns copy -- for being consistent with other 'as' specializations
     if (!exists()) return (def);
-    
-    std::map <std::string,RSJresource> ret;
-    std::string content = strtrim (strtrim (strtrim(data), " {", "l" ), " }", "r" );
-    
-    std::vector<std::string> nvPairs = split_RSJ_array (content);
-    for (int a=0; a<nvPairs.size(); ++a) {
-        std::size_t assignmentPos = nvPairs[a].find (RSJobjectassignment);
-        ret.insert (make_pair( 
-                            strip_outer_quotes (nvPairs[a].substr (0,assignmentPos) ) ,
-                            RSJresource (strtrim (nvPairs[a].substr (assignmentPos+1) ) )
-                   ) );
-    }
-    
-    return (ret);
+    return (as_object());
 }
 
-RSJresource& RSJresource::operator[] (std::string key) {
-    if (parsed_obj.empty())
-        parsed_obj = as<RSJobject>();
-    return (parsed_obj[key]); // will return empty resource if key does not exist
+RSJresource& RSJresource::operator[] (std::string key) { // returns reference
+    return ( (as_object())[key] ); // will return empty resource (with _exists==false) if 
+                                            // either this resource does not exist, is not an object, or the key does not exist
 }
 
 // ------------------------------------
+// RSJ types
 
 // RSJarray
 template <>
-std::vector <RSJresource>  RSJresource::as<RSJarray> (const RSJarray& def) {
+RSJarray  RSJresource::as<RSJarray> (const RSJarray& def) { // returns copy -- for being consistent with other 'as' specializations
     if (!exists()) return (def);
-    
-    std::vector <RSJresource> ret;
-    std::string content = strtrim (strtrim (strtrim(data), " [", "l" ), " ]", "r" );
-    
-    std::vector<std::string> nvPairs = split_RSJ_array (content);
-    for (int a=0; a<nvPairs.size(); ++a) 
-        ret.push_back (RSJresource (strtrim (nvPairs[a]) ) );
-    
-    return (ret);
+    return (as_array());
 }
 
-RSJresource& RSJresource::operator[] (int indx) {
-    if (parsed_array.empty())
-        parsed_array = as<RSJarray>();
-    if (indx>=parsed_array.size())
-        parsed_array.resize(indx+1); // insert empty resources
-    return (parsed_array[indx]);
+RSJresource& RSJresource::operator[] (int indx) { // returns reference
+    as_array();
+    if (indx >= parsed_data_p->array.size())
+        parsed_data_p->array.resize(indx+1); // insert empty resources
+    return (parsed_data_p->array[indx]); // will return empty resource (with _exists==false) if 
+                                            // either this resource does not exist, is not an object, or the key does not exist
 }
 
 // ------------------------------------
+// Elementary types
 
 // String
 template <>
@@ -339,5 +598,10 @@ bool  RSJresource::as<bool> (const bool& def) {
     if (cleanData=="true" || cleanData=="TRUE" || cleanData=="True" || atoi(cleanData.c_str())!=0) return (true);
     return (false);
 }
+
+// ------------------------------------
+// Other types
+
+
 
 #endif

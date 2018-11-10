@@ -500,7 +500,7 @@ int main(int argc, char *argv[])
                                                 test_search_problem.imgPrefix.str().c_str());
         cv::imwrite(imgFname, test_search_problem.image_to_display);
     }
-    printf ("\ncomputation time = %f, cost = %f\n", 0.0, cost);
+    printf ("\ncost = %f\n", cost);
     cvWaitKey();
     #endif
     

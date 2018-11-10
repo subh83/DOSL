@@ -75,8 +75,8 @@ int main(int argc, char *argv[])
     cv::Mat obs_map = cv::imread (map_file, CV_LOAD_IMAGE_GRAYSCALE);
     
     // find paths
-    cvMulticlassPathPlanner<_DOSL_ALGORITHM> path_planner (obs_map, start, goal, nPaths, true);
-    path_planner.find_paths ();
+    cvMulticlassPathPlanner<_DOSL_ALGORITHM> path_planner (obs_map);
+    path_planner.find_paths (start, goal, nPaths, true);
     
     // draw paths and display
     obs_map = path_planner.draw_paths ({}, 2);

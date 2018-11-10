@@ -27,23 +27,6 @@
 #ifndef __DOSL_MAIN_
 #define __DOSL_MAIN_
 
-/* *** Helper macro for selecting planner ***
-
-Set 'DOSL_ALGORITHM' before including this file. Otherwise, multiple algorithm files will be included.
-Ex:
-    #define _DOSL_ALGORITHM  AStar
-    #include "dosl.h"
-
-If set, also provides macro 'DOSL_ALGORITHM(str)'
-Ex:
-    DOSL_ALGORITHM(Node)
-expands to
-    AStarNode
-
-Alternatively:
-    _JOIN(_DOSL_ALGORITHM,Node)
-*/
-
 #define _DOSL_VERSION 3.25
 #include "utils/back_compatibility.hpp"
 

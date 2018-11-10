@@ -100,6 +100,10 @@
 #define _dosl_warn(...) { std::cout << std::flush << _YELLOW _BOLD "WARNING: " BOLD_; printf(__VA_ARGS__); std::cout << YELLOW_  << std::endl; }
 #endif
 
+#ifndef _dosl_info
+#define _dosl_info(...) { std::cout << std::flush << _BLUE _BOLD "NOTE: " BOLD_; printf(__VA_ARGS__); std::cout << BLUE_  << std::endl; }
+#endif
+
 #if _DOSL_DEBUG
     #ifndef _dosl_warn_once
         #include <unordered_map>
@@ -110,7 +114,7 @@
         }
         #define _dosl_default_fun_warn(fun_name) { \
             _dosl_warn_once(fun_name, "Member '" \
-            fun_name "' has not been overwritten. Using default member (this will most likely result in undesirable results)!"); \
+            fun_name "' has not been overwritten. Using default member (this will most likely produce undesirable results)!"); \
         }
     #endif
 #else
@@ -137,16 +141,16 @@
 #ifndef _DOSL_FAST_VECTOR
     
     // fast_vector<..., 1u>
-    /* #include "dosl/utils/fast_vector.tcc"
+    /* #include "fast_vector.tcc"
     #define _DOSL_FAST_VECTOR  fast_vector */
 
     // fast_vector<..., 0u>
-    /* #include "dosl/utils/fast_vector.tcc"
+    /* #include "fast_vector.tcc"
     template <class T>
     using _DOSL_FAST_VECTOR = fast_vector<T, 0u>; // C++11 */
 
     // std::vector
-    #include "dosl/utils/std_vector.tcc"
+    #include "std_vector.tcc"
     #define _DOSL_FAST_VECTOR  std_vector
     
 #endif
@@ -158,16 +162,16 @@
 #ifndef _DOSL_SMALL_VECTOR
 
     // fast_vector<..., 1u>
-    #include "dosl/utils/fast_vector.tcc"
+    #include "fast_vector.tcc"
     #define _DOSL_SMALL_VECTOR  fast_vector
 
     // fast_vector<..., 0u>
-    /* #include "dosl/utils/fast_vector.tcc"
+    /* #include "fast_vector.tcc"
     template <class T>
     using _DOSL_FAST_VECTOR = fast_vector<T, 0u>; // C++11 */
 
     // std::vector
-    /* #include "dosl/utils/std_vector.tcc"
+    /* #include "std_vector.tcc"
     #define _DOSL_FAST_VECTOR  std_vector */
     
 #endif
@@ -191,7 +195,7 @@
 #ifndef _DOSL_LARGE_UNORDERED_SET
 
     // HashTableContainer
-    #include "dosl/utils/fast_unordered_set.tcc"
+    #include "fast_unordered_set.tcc"
     #define _DOSL_LARGE_UNORDERED_SET        fast_unordered_set
 
 #endif
@@ -200,7 +204,7 @@
 
 #ifndef _DOSL_HEAP
 
-    #include "dosl/utils/binary_heap.tcc"
+    #include "binary_heap.tcc"
     #define _DOSL_HEAP                   binary_heap  //std::priority_queue
     // _DOSL_HEAP <key, CompareFunctor, HeapPosFunctor>
     // Provides: insert (key&);

@@ -53,6 +53,10 @@ TEST_SUCCESS_TEXT = "\033[32mTESTNAME compilation test successful!\033[39m\n"
 TEST_FAILURE_TEXT = "\033[31m\033[1mERROR:\033[21m %s compilation test failed! Please make sure that %s is installed and is in the compiler's search path.\033[39m\n"
 
 # --------------------------------------------
+# Dependencies
+
+
+# --------------------------------------------
 # common flags
 
 CC = g++
@@ -61,16 +65,18 @@ PROFILE = -pg
 WARNS = -w
 
 LIBS = -lm
-LIBS_OPENCV = -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs
+LIBS_OPENCV = `pkg-config --cflags --libs opencv` -L/usr/local/share/OpenCV/3rdparty/lib/  # The -L option fixes bug with libippicv
 LIBS_OPENGL = -lglut -lGLU -lGL -lXi -lXmu -lX11 -lXext
-LIBS_ARMADILLO = -larmadillo
+LIBS_ARMADILLO = -larmadillo  #`pkg-config --cflags --libs armadillo`
 LIBS_MATHEVAL = -lmatheval
 
 LIB_FOLDERS = -L/usr/local/lib
 
 BIN_FOLDER = bin
 
-# --------------------------------------------
+# ================================
+# --------------------------------
+
 TEST_FOLDER=src/test
 test: cv_test json_test matheval_test
 
