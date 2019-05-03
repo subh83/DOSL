@@ -54,8 +54,8 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
 *******************************************************************************
 
 ### DOSL is designed to be:
-* Fast (e.g., with integer coordinates for nodes but floating point cost as well as cost function needing to perform floating point operations online, and an average degree of the graph being 8, the library can expand about 150,000 nodes in the graph in just 1 second on a 1.8GHz processor machine with 8GB RAM.)
-* Easy to use (being template-based, defining new arbitrary node-types, cost types, etc. is made easy. For graph connectivity, node accessibility tests, etc, user-defined classes can be used, which makes defining the graph structure very easy, yet highly flexible.) 
+* Fast (e.g., with integer coordinates for nodes but floating point cost as well as cost function needing to perform floating point operations online, and an average degree of the graph being 8, the A* search algorithm of the library can expand about 150,000 nodes in the graph in about 0.53 second on a 1.8GHz quad-core processor machine with 16GB RAM.)
+* Easy to use / versatile (being template-based, defining new arbitrary node-types, cost types, etc. is made easy. For graph connectivity, node accessibility tests, etc, user-defined classes can be used, which makes defining the graph structure very easy, yet highly flexible.) 
 
 ### DOSL supports:
 - Directed graphs with complex cost functions.
@@ -70,6 +70,11 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
 - Ability to write new planners with ease. Comes with a weighted A-star (that includes Dijkstra's and normal A-star), Theta-star and S-star planner by default.
 
 ### New:
+* **A major change since v3.3x:** The `[AlgName]::Algorithm` class template now takes in the derived class as its first template parameter (a CRTP). Thus, definition of a `searchProblem` class should now be made as follows:
+```C++
+    class searchProblem : public AStar::Algorithm <searchProblem, myNode, double>
+    { /* ... */};                                  // ^^^^ new template parameter
+```
 * New planner with an implementation of the S-star search algorithm for finding optimal path through simplicial complexes (https://arxiv.org/abs/1607.07009)
 
 *NOTE:* Discrete Optimal Search Library (DOSL) is a fork of the Yet Another Graph-Search Based Planning Library (YAGSBPL)       hosted at https://github.com/subh83/YAGSBPL . YAGSBPL is now deprecated.
@@ -79,7 +84,7 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
 Installation and Compilation of Examples:
 ----------------------------------------
 
-Installation:
+**Installation** (_optional_)**:** 
 DOSL is (to a large extent) template-based. There is nothing to build for the library itself.
 Simply include the header "dosl/dosl" in your C++ code to use DOSL.
 You can (optionally) install the headers in the system folder by running
@@ -87,17 +92,24 @@ You can (optionally) install the headers in the system folder by running
     sudo make install
 ```
 
-Quick compilation of the simple examples in the `examples-dosl` folder (this will ask you to choose an algorithm):
+**Compilation:**
+Quick compilation of all the examples in the `examples-dosl` folder (this will ask you to choose an algorithm):
 ```
     cd examples-dosl
-    make simple
+    make all
 ```
-Alternatively, run  `make advanced`  or  `make all` (see `examples-dosl/makefile` for other make rules).
+Alternatively, run  `make simple`  or  `make advanced` to compile a selection of the example programs only (see `examples-dosl/makefile` for other make rules).
 All executables are created in the `examples-dosl/bin` folder. 
 
-Then, to run an example program:
+
+**Running the Examples:**
+After compilation, to run an example program:
 ```
     ./bin/<program_name>
+```
+Or to run all compiled example programs under the `./bin` folder:
+```
+    make run
 ```
 
 ******************************************************************************************
@@ -152,7 +164,7 @@ public:
        and search problem description (start and stop criteria).
        Needs to be derived from DOSL-provided class template 'AStar::Algorithm<node_type,cost_type>' */
 
-class searchProblem : public AStar::Algorithm<myNode,double>
+class searchProblem : public AStar::Algorithm<searchProblem,myNode,double>
 {
 public:
     // user-defined problem parameters:
@@ -217,7 +229,7 @@ int main(int argc, char *argv[])
     test_search_problem.search(); // execute search.
     
     // get path from start to goal vertex.
-    std::vector<myNode*> path = test_search_problem.reconstructPointerPath (test_search_problem.goal_node);
+    std::vector<myNode*> path = test_search_problem.reconstruct_pointer_path (test_search_problem.goal_node);
     
     // print path
     printf ("\nPath: \n[");
@@ -252,6 +264,7 @@ The shortest path is stored in the member `std::vector<cv::Point> path`. You can
 void cvPathPlanner::draw_path (cv::Mat& in_map, cv::Mat& out_map, ...);
 cv::Mat cvPathPlanner::draw_path (...);
 ```
+See the example in `examples-dosl/src/simple/map2d_encapsulated_PathPlanning.cpp` for more details.
 
 __Multiple shortest paths in different topological classes in an OpenCV image:__
 
@@ -269,6 +282,7 @@ The shortest path is stored in the member `std::vector< std::vector< cv::Point >
 void cvMulticlassPathPlanner::draw_paths (cv::Mat& in_map, cv::Mat& out_map, ...);
 cv::Mat cvMulticlassPathPlanner::draw_paths (...)
 ```
+See the example in `examples-dosl/src/simple/homotopy2d_encapsulated_PathPlanning.cpp` for more details.
 ******************************************************************************************
 
 Documentation:
@@ -321,6 +335,8 @@ Bibtex entry:
 
 Version history:
 ---------------
+
+* May 2019: version 3.3 released: virtual functions replaced by CRTP in `[AlgName]::Algorithm` classes, thus making some programs twice as fast; replaced node and simplex containers/heaps with pointers, making way for multi-thread programming in future; renaming of some variables and functions (back compatibility included); bug fixes.
 
 * Nov 2018: version 3.26 released: Some bug fixes. Changes made to encapsulation member functions.
 

@@ -148,12 +148,12 @@ public:
     
     void print (std::string head="", std::string tail="") const {
         _dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ "x=" << x << ", y=" << y << ", ";
-        printf("dist=%0.8f. G=", dist());
-        (G==std::numeric_limits<double>::max())? printf("INF") : printf("%0.8f", G);
-        printf(" (diff=%e)", G - dist());
+        printf("dist=%0.8f. g_score=", dist());
+        (g_score==std::numeric_limits<double>::max())? printf("INF") : printf("%0.8f", g_score);
+        printf(" (diff=%e)", g_score - dist());
         _dosl_cout << _dosl_endl;
-        _dosl_printf_nobreak("Successors: ");
-        for (auto it=Successors.begin(); it!=Successors.end(); ++it)
+        _dosl_printf_nobreak("successors: ");
+        for (auto it=successors.begin(); it!=successors.end(); ++it)
             printf ("%x, ", it->first);
         _dosl_cout << tail << _dosl_endl;
     }
@@ -266,7 +266,7 @@ public:
 
 // ==============================================================================
 
-class SearchProblem : public _DOSL_ALGORITHM::Algorithm<myNode,double>  // SStar::Algorithm or AStar::Algorithm
+class SearchProblem : public _DOSL_ALGORITHM::Algorithm<SearchProblem,myNode,double>  // SStar::Algorithm or AStar::Algorithm
 {
 public:
     // Image display variables / parameters
@@ -353,7 +353,7 @@ public:
         #endif
         
         // Set planner variables
-        AllNodesSet.HashTableSize = ceil(MAX_X - MIN_X + 1);
+        all_nodes_set_p->reserve (ceil (MAX_X - MIN_X + 1));
     }
     
     
@@ -575,14 +575,14 @@ public:
     // =================================================================
     
     CvScalar getExpandedNodeeColor (myNode &n) {
-        double gScale = 1.0; // exp(-0.01*n.G); //1.0;
+        double gScale = 1.0; // exp(-0.01*n.g_score); //1.0;
         double r=0.0, g=0.0, b=0.0;
         while (abs(r-b)<50 && g-b<100) {
             r = 60.0 + (rand()%151);
             g = 60.0 + (rand()%149);
             b = 60.0 + (rand()%157);
         } 
-        r *= 0.5; //1.0 + sin(20*n.G/(MAX_X-MIN_X)); // / (MAX_X-MIN_X);
+        r *= 0.5; //1.0 + sin(20*n.g_score/(MAX_X-MIN_X)); // / (MAX_X-MIN_X);
         return (cvScalar(b, g, r));
     }
     
@@ -607,14 +607,14 @@ public:
             #endif
             if (!cameFromNull) {
                 
-                if ( !isEqual_d (n.G, n.dist()) ) {
+                if ( !isEqual_d (n.g_score, n.dist()) ) {
                     #if defined(S_STAR_ALGORITHM) && _YAGSBPL_DEBUG>1
-                    printf("*** Distance mismatch! diff=%f\n", fabs(n.G - n.dist()));
+                    printf("*** Distance mismatch! diff=%f\n", fabs(n.g_score - n.dist()));
                     n.CameFromSimplex->print ("Came-from simplex: ");
                     pauseForVis = true;
                     #endif
                     #if VERTEX_COLORS
-                    double red = MIN(255.0, MIN(255.0, 10*255.0*fabs(n.G - n.dist())/n.dist() ) );
+                    double red = MIN(255.0, MIN(255.0, 10*255.0*fabs(n.g_score - n.dist())/n.dist() ) );
                     col = cvScalar(0.0, 255.0-red, red); // red
                     #else
                     col = cvScalar(200.0, 200.0, 200.0);
@@ -628,7 +628,7 @@ public:
                     #endif
             }
             else {
-                printf ("Expanded, but came-from is NULL!!\n");
+                printf ("expanded, but came-from is NULL!!\n");
                 pauseForVis = true;
             }
         }
@@ -639,9 +639,9 @@ public:
         
         else if (e & UNEXPANDED) {
             col = cvScalar(255.0, 0.0, 150.0); // purple
-            if ( !isEqual_d (n.G, n.dist()) ) {
+            if ( !isEqual_d (n.g_score, n.dist()) ) {
                 #if defined(S_STAR_ALGORITHM) && _YAGSBPL_DEBUG>1
-                printf("*** Distance mismatch even with backtrace correction backtrace! diff=%f\n", fabs(n.G - n.dist()));
+                printf("*** Distance mismatch even with backtrace correction backtrace! diff=%f\n", fabs(n.g_score - n.dist()));
                 n.CameFromSimplex->print ("Came-from simplex: ");
                 pauseForVis = true;
                 #endif
@@ -658,7 +658,7 @@ public:
         if (drawVertex) {
             double nodeRad = radFactor*VERTEX_SIZE;
             cv::circle (image_to_display, cv_plot_coord(n.x,n.y), nodeRad*PLOT_SCALE, col, thickness, 8);
-            for (auto its=n.Successors.begin(); its!=n.Successors.end(); ++its) {
+            for (auto its=n.successors.begin(); its!=n.successors.end(); ++its) {
                 double Dx = (*its).first->x - n.x, Dy = (*its).first->y - n.y;
                 double Dd = sqrt(Dx*Dx + Dy*Dy);
                 double nx=Dx/Dd, ny=Dy/Dd;
@@ -669,12 +669,12 @@ public:
             }
         }
         
-        if (ExpandCount%VIS_INTERVAL == 0  ||  NodeHeap.size() == 0) {
+        if (expand_count%VIS_INTERVAL == 0  ||  node_heap_p->size() == 0) {
             cv::imshow("Display window", image_to_display);
             std::cout << std::flush;
-            if (SAVE_IMG_INTERVAL>0 && ExpandCount%SAVE_IMG_INTERVAL == 0) {
+            if (SAVE_IMG_INTERVAL>0 && expand_count%SAVE_IMG_INTERVAL == 0) {
                 char imgFname[1024];
-                sprintf(imgFname, "%s../files/out/%s%05d.png", program_path.c_str(), imgPrefix.str().c_str(), ExpandCount);
+                sprintf(imgFname, "%s../files/out/%s%05d.png", program_path.c_str(), imgPrefix.str().c_str(), expand_count);
                 cv::imwrite (imgFname, image_to_display);
             }
             cvWaitKey(1); //(10);
@@ -715,13 +715,13 @@ int main(int argc, char *argv[])
     if (SAVE_IMG_INTERVAL>0) {
         char imgFname[1024];
         sprintf(imgFname, "%s../files/out/%s%05d.png", program_path.c_str(), 
-                            test_search_problem.imgPrefix.str().c_str(), test_search_problem.ExpandCount);
+                            test_search_problem.imgPrefix.str().c_str(), test_search_problem.expand_count);
         cv::imwrite (imgFname, test_search_problem.image_to_display);
     }
     
     // -------------------------------
     // Get path
-    std::vector <myNode*> path = test_search_problem.reconstructPointerPath (test_search_problem.goalNode);
+    std::vector <myNode*> path = test_search_problem.reconstruct_pointer_path (test_search_problem.goalNode);
     
     // print/plot path
     printf("\nPath: ");

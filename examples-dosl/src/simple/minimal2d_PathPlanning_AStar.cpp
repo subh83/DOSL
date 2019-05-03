@@ -67,7 +67,7 @@ public:
 
 // The following class contains the main search and path reconstruction function.
 
-class searchProblem : public AStar::Algorithm<myNode,double>
+class searchProblem : public AStar::Algorithm<searchProblem,myNode,double>
 {
 public:
     // user-defined problem parameters:
@@ -133,11 +133,11 @@ public:
 int main(int argc, char *argv[])
 {
     searchProblem my_search_problem;
-    my_search_problem.AllNodesSet.set_hash_table_size (8192); // optional.
+    my_search_problem.all_nodes_set_p->reserve (8192); // optional.
     my_search_problem.search();
     
     // get path
-    std::vector<myNode*>  path = my_search_problem.reconstructPointerPath (my_search_problem.goal_node);
+    std::vector<myNode*>  path = my_search_problem.reconstruct_pointer_path (my_search_problem.goal_node);
     
     // print path
     printf ("\nPath (as Octave array): \npp = [");

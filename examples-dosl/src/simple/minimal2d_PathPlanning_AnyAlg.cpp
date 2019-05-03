@@ -88,7 +88,7 @@ public:
 // The following class contains the main search and path reconstruction function.
 
 template <class AlgClass>
-class searchProblem : public AlgClass::template Algorithm< myNode<AlgClass>, double>
+class searchProblem : public AlgClass::template Algorithm< searchProblem<AlgClass>, myNode<AlgClass>, double>
 {
 public:
     typedef myNode<AlgClass> MyNode;
@@ -171,11 +171,11 @@ void run_search (void) {
     std::cout << "run_search: Algorithm name: " << AlgClass::AlgorithmName << std::endl;
     
     searchProblem<AlgClass> test_search_problem;
-    test_search_problem.AllNodesSet.set_hash_table_size (8192); // optional.
+    test_search_problem.all_nodes_set_p->reserve (8192); // optional.
     test_search_problem.search();
     
     // get path
-    auto path = test_search_problem.reconstructPointerPath (test_search_problem.goal_node);
+    auto path = test_search_problem.reconstruct_pointer_path (test_search_problem.goal_node);
     
     // print path
     printf ("\nPath (as Octave array): \n[");
@@ -191,9 +191,13 @@ void run_search (void) {
 int main(int argc, char *argv[])
 {
     std::string alg_name;
-    std::cout << "Please enter algorithm name [" 
-                    _YELLOW "AStar" YELLOW_ "|" _YELLOW "SStar" YELLOW_ "|" _YELLOW "ThetaStar" YELLOW_ "]: ";
-    std::cin >> alg_name;
+    if (argc < 2) {
+        std::cout << "Please enter algorithm name [" 
+                        _YELLOW "AStar" YELLOW_ "|" _YELLOW "SStar" YELLOW_ "|" _YELLOW "ThetaStar" YELLOW_ "]: ";
+        std::cin >> alg_name;
+    }
+    else
+        alg_name = argv[1];
     
     if (alg_name == "AStar")
         run_search<AStar>();

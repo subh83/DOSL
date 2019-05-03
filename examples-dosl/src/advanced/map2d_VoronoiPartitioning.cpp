@@ -159,7 +159,9 @@ public:
     
     // variables decsribing problem
     COORD_TYPE MAX_X, MIN_X, MAX_Y, MIN_Y;
-    myNode startNode, goalNode, lastExpanded;
+    myNode lastExpanded;
+    std::vector<myNode> startNodes;
+    std::vector<CvScalar> colors;
     
     
     // -----------------------------------------------------------
@@ -199,10 +201,12 @@ public:
         
         // read data for planning
         MAX_X=my_map.width(); MIN_X=0; MAX_Y=my_map.height(); MIN_Y=0;
-        startNode = myNode (expt_container["start"][0].as<COORD_TYPE>(), expt_container["start"][1].as<COORD_TYPE>());
-        goalNode = myNode (expt_container["goal"][0].as<COORD_TYPE>(), expt_container["goal"][1].as<COORD_TYPE>());
-        startNode.put_in_grid(); goalNode.put_in_grid(); 
-        startNode.print("Start node: ");
+        for (int a=0; a<expt_container["start"].size(); ++a) {
+            startNodes.push_back (myNode (expt_container["start"][a][0].as<COORD_TYPE>(), expt_container["start"][a][1].as<COORD_TYPE>()));
+            startNodes[a].put_in_grid();
+            startNodes[a].print("Start node: ");
+            colors.push_back (cvScalar (rand()%256, rand()%256, rand()%256));
+        }
         
         // display options
         PLOT_SCALE = expt_container["plot_options"]["plot_scale"].as<double>(1.0);
@@ -323,9 +327,6 @@ public:
     
     double getHeuristics (myNode& n)
     {
-        /* double dx = goalNode.x - n.x;
-        double dy = goalNode.y - n.y;
-        return (sqrt(dx*dx + dy*dy)); */
         return (0.0); // Dijkstra's
     }
     
@@ -333,11 +334,9 @@ public:
     
     std::vector<myNode> getStartNodes (void) 
     {
-        std::vector<myNode> startNodes;
-        startNodes.push_back (startNode);
-        
         #if _VIS
-        cv::circle (image_to_display, cv_plot_coord(startNode.x,startNode.y), VERTEX_SIZE*PLOT_SCALE, 
+        for (int a=0; a<startNodes.size(); ++a)
+            cv::circle (image_to_display, cv_plot_coord(startNodes[a].x,startNodes[a].y), VERTEX_SIZE*PLOT_SCALE, 
                                                                 cvScalar (200.0, 150.0, 150.0), -1, 8);
         #endif
         return (startNodes);
@@ -365,7 +364,7 @@ public:
             #endif
             if (!cameFromNull) {
                 #if VERTEX_COLORS
-                col = cvScalar(150.0, 255.0, 150.0);
+                col = colors[n.lineage_data.id]; //cvScalar(150.0, 255.0, 150.0);
                 #else
                 col = cvScalar(255.0, 255.0, 255.0);
                 #endif
@@ -418,10 +417,6 @@ public:
     
     // ---------------------------------------
     
-    bool stopSearch (myNode &n) {
-        return (n==goalNode);
-    }
-    
 };
 
 // ==============================================================================
@@ -432,7 +427,7 @@ int main(int argc, char *argv[])
     // Read command-line parameters:
     compute_program_path();
     
-    std::string expt_f_name = program_path+"../files/expt/basic_experiments.json", expt_name="L457_expt1";
+    std::string expt_f_name = program_path+"../files/expt/basic_experiments.json", expt_name="L457_partition";
     if (argc == 2) {
         expt_name = argv[1];
     }
@@ -450,7 +445,7 @@ int main(int argc, char *argv[])
     searchProblem test_search_problem (expt_f_name, expt_name, program_path+"../files/out/");
     test_search_problem.search();
     
-    // get path:
+    /*// get path:
     auto ppath = test_search_problem.reconstruct_pointer_path (test_search_problem.goalNode);
     
     // -------------------------------------
@@ -478,7 +473,7 @@ int main(int argc, char *argv[])
                     test_search_problem.VERTEX_SIZE*test_search_problem.PLOT_SCALE, cvScalar(150.0,0.0,255.0), -1, 8);
     
     cv::imshow("Display window", test_search_problem.image_to_display);
-    #endif
+    #endif */
     
     // print statistics
     #if _STAT
@@ -501,7 +496,6 @@ int main(int argc, char *argv[])
                                                 test_search_problem.imgPrefix.str().c_str());
         cv::imwrite(imgFname, test_search_problem.image_to_display);
     }
-    printf ("\ncost = %f\n", cost);
     cvWaitKey();
     #endif
     

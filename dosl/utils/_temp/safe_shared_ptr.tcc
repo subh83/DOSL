@@ -23,53 +23,52 @@
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
-#ifndef _DOSL_DOUBLE_UTILS_HPP
-#define _DOSL_DOUBLE_UTILS_HPP
 
-#include <math.h>
+#ifndef __DOSL_SAFE_SHARED_PTR_TCC
+#define __DOSL_SAFE_SHARED_PTR_TCC
 
-// ------------------------------------------------------------
-// generic macros
+#include <mutex>
+#include <memory>
 
-#define isEqual_i(x,y)  ((x)==(y))
-#define isLess_i(x,y)  ((x)<(y)) // x < y
-#define isGreater_i(x,y)  ((x)>(y)) // x > y
-#define isLessEq_i(x,y)  ((x)<=(y)) // x <= y
-#define isGreaterEq_i(x,y)  ((x)>=(y)) // x <= y
+/*template <class T>
+class safe_shared_ptr_data {
+public:
+    std::shared_ptr<T> data;
+    std::mutex mtx;
+};*/
 
-#define sign(x)    (((x)>0.0)?1.0:(((x)<0.0)?-1.0:0.0))
-#define iround(x)  ((int)round(x))
+template <class T>
+class safe_shared_ptr : public std::shared_ptr<T> {
+public:
+    
+    std::mutex* mtx_p;
+    
+    // constructors
+    safe_shared_ptr() : std::shared_ptr<T>() { mtx_p = new std::mutex; };
+    /*constexpr shared_ptr(nullptr_t) : shared_ptr() {}
+    template <class U> explicit shared_ptr (U* p);
+    template <class U, class D> shared_ptr (U* p, D del);
+    template <class D> shared_ptr (nullptr_t p, D del);
+    template <class U, class D, class Alloc> shared_ptr (U* p, D del, Alloc alloc);
+    template <class D, class Alloc> shared_ptr (nullptr_t p, D del, Alloc alloc);
+    shared_ptr (const shared_ptr& x) noexcept;
+    template <class U> shared_ptr (const shared_ptr<U>& x) noexcept;
+    template <class U> explicit shared_ptr (const weak_ptr<U>& x);
+    shared_ptr (shared_ptr&& x) noexcept;
+    template <class U> shared_ptr (shared_ptr<U>&& x) noexcept;
+    template <class U> shared_ptr (auto_ptr<U>&& x);
+    template <class U, class D> shared_ptr (unique_ptr<U,D>&& x);
+    template <class U> shared_ptr (const shared_ptr<U>& x, element_type* p) noexcept; */
 
-// ------------------------------------------------------------
-// relaxed comparisons and other macros (appropriate if x and y take discrete values)
-
-#ifndef INFINITESIMAL_DOUBLE
-#define INFINITESIMAL_DOUBLE  1e-8
-#endif
-
-#define isEqual_d(x,y)  ( fabs((x)-(y)) < INFINITESIMAL_DOUBLE ) // x == y
-#define isLess_d(x,y)  ( (x)+INFINITESIMAL_DOUBLE < (y) ) // x < y
-#define isGreater_d(x,y)  ( (x) > (y)+INFINITESIMAL_DOUBLE ) // x > y
-#define isLessEq_d(x,y)  (!isGreater_d(x,y)) // x <= y
-#define isGreaterEq_d(x,y)  (!isLess_d(x,y)) // x <= y
-
-#define sign_d(x)   ((isGreater_d((x),0.0))?1.0:((isLess_d((x),0.0))?-1.0:0.0))
-
-// ------------------------------------------------------------
-// math constnts
-#define PI       3.1415926535897931
-#define PI_BY_3  1.0471975511965976
-#define SQRT3BY2 0.8660254037844386
-#define SQRT2    1.4142135623730951
-#define SQRT3    1.7320508075688772
-
-// ------------------------------------------------------------
-// Functions
-
-int approx_floor (double x, double tol=INFINITESIMAL_DOUBLE) {
-    double ret = floor (x);
-    if (ret+1.0-x<tol) ++ret;
-    return ((int)ret);
-}
+    
+    
+    // Access
+    // "behave like pointer"
+    T* operator->() { return (instance_p); }
+    T& operator*() { return (*instance_p); }
+    // convert to pointer of type T*
+    //operator T*() const { return (instance_p); }
+    
+};
 
 #endif

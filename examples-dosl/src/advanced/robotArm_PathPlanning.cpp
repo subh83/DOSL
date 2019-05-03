@@ -147,7 +147,7 @@ double edges[][3] = { {-1.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, -1.0, 0.0}, {0.0,
                         {1.0, 1.0, 1.0}, {1.0, -1.0, 0.0}, {-1.0, 1.0, 0.0}, {0.0, -1.0, -1.0}, {0.0, 1.0, 1.0}, 
                         {-1.0, 0.0, -1.0}, {1.0, 0.0, 1.0}, {0.0, 0.0, -1.0}, {0.0, 0.0, 1.0} };
 
-class SearchProblem : public _DOSL_ALGORITHM::Algorithm<ArmConfig,double>
+class SearchProblem : public _DOSL_ALGORITHM::Algorithm<SearchProblem,ArmConfig,double>
 {
 public:
     RSJresource expt_container;
@@ -222,8 +222,8 @@ public:
         #endif
         
         // Set planner variables
-        AllNodesSet.HashTableSize = 16384;
-        ProgressShowInterval = 100;
+        all_nodes_set_p->reserve (16384);
+        progress_show_interval = 100;
     }
     
     // -----------------------------------------------------------
@@ -379,7 +379,7 @@ public:
 
 int main(int argc, char *argv[])
 {
-    DOSL_RUNTIME_VERBOSE_SWITCH = 0;
+    //DOSL_RUNTIME_VERBOSE_SWITCH = 0;
     compute_program_path();
     
     std::string expt_fName = program_path+"../files/expt/robot_arm_expt.json";
@@ -397,11 +397,13 @@ int main(int argc, char *argv[])
                 "Note: This program currently does not support 'ThetaStar' algorithm.\n");
     
     SearchProblem test_search_problem (expt_fName, expt_name);
+    std::cout << "before search..." << std::endl;
     test_search_problem.search();
+    std::cout << "after search..." << std::endl;
     
     // Get path
     DOSL_RUNTIME_VERBOSE_SWITCH = 1;
-    auto path = test_search_problem.reconstructPath (test_search_problem.final_config);
+    auto path = test_search_problem.reconstruct_weighted_pointer_path (test_search_problem.final_config);
     
     // -------------------------------------
     

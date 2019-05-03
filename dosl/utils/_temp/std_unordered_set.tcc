@@ -23,3 +23,37 @@
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
+
+#ifndef __DOSL_STD_UNORDERED_SET_TCC
+#define __DOSL_STD_UNORDERED_SET_TCC
+
+#include <unordered_set>
+
+
+template <class key, // 'key' must have copy constructer defined
+          class HashFunctor = std::hash<key>,
+          class EqualToFunctor = std::equal_to<key> >
+class std_unordered_set : public std::unordered_set<key,HashFunctor,EqualToFunctor>
+{
+public:
+    using std::unordered_set<key,HashFunctor,EqualToFunctor>::begin;
+    using std::unordered_set<key,HashFunctor,EqualToFunctor>::end;
+    using std::unordered_set<key,HashFunctor,EqualToFunctor>::size;
+    using std::unordered_set<key,HashFunctor,EqualToFunctor>::empty;
+    using std::unordered_set<key,HashFunctor,EqualToFunctor>::clear;
+    using std::unordered_set<key,HashFunctor,EqualToFunctor>::insert;
+    
+    std_unordered_set () { }
+    std_unordered_set (size_t n=1024 , const HashFunctor& hf = HashFunctor(), const EqualToFunctor& eql = EqualToFunctor())
+         : std::unordered_set<key,HashFunctor,EqualToFunctor>(n, hf, eql) {  }
+     
+    key* get (key& n) {
+        //auto it = find(n);
+        //if (it != end()) return &(*it);
+        return &(*(insert(n).first));
+    }
+};
+
+#endif
+
+

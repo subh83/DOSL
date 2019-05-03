@@ -29,28 +29,28 @@
 
 #include "metric_simplex_base.tcc"
 
-template < class nodePointerType, class doubleType, class doubleVecType>
+template < class _NodePointerType, class DoubleType, class DoubleVecType>
 class AMetricSimplex;
 
 // ---------------------------
 
-template <class nodePointerType, class doubleType>
+template <class _NodePointerType, class DoubleType>
 class PathPoint
 {
 public:
-    _DOSL_SMALL_MAP <nodePointerType, doubleType>  p; // vertices whose convex combination is this point
-    doubleType G; // g-score at point
+    _DOSL_SMALL_MAP <_NodePointerType, DoubleType>  p; // vertices whose convex combination is this point
+    DoubleType g_score; // g-score at point
     void* containing_simplex_p;
     
-    _DOSL_SMALL_MAP <nodePointerType, doubleType> last_p;
+    _DOSL_SMALL_MAP <_NodePointerType, DoubleType> last_p;
     
     // default onstructor
-    PathPoint (_DOSL_SMALL_MAP <nodePointerType, doubleType> _p = _DOSL_SMALL_MAP <nodePointerType, doubleType>(), 
-               doubleType _G = std::numeric_limits<doubleType>::max(), 
-               _DOSL_SMALL_MAP <nodePointerType, doubleType> _last_p 
-                                        = _DOSL_SMALL_MAP <nodePointerType, doubleType>(),
+    PathPoint (_DOSL_SMALL_MAP <_NodePointerType, DoubleType> _p = _DOSL_SMALL_MAP <_NodePointerType, DoubleType>(), 
+               DoubleType _G = std::numeric_limits<DoubleType>::max(), 
+               _DOSL_SMALL_MAP <_NodePointerType, DoubleType> _last_p 
+                                        = _DOSL_SMALL_MAP <_NodePointerType, DoubleType>(),
                void* _containing_simplex_p = NULL ) 
-            : p(_p), G(_G), last_p(_last_p), containing_simplex_p(_containing_simplex_p) { }
+            : p(_p), g_score(_G), last_p(_last_p), containing_simplex_p(_containing_simplex_p) { }
     
     void print (std::string head="", std::string tail="") {
         _dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ ": " << _dosl_endl;
@@ -64,24 +64,24 @@ public:
 
 // ---------------------------
 
-template < class nodePointerType, class doubleType=double, class doubleVecType=_DOSL_SMALL_VECTOR<doubleType> >
+template < class _NodePointerType, class DoubleType=double, class DoubleVecType=_DOSL_SMALL_VECTOR<DoubleType> >
 class MetricSimplexCollection
 {
 public:
 
-    typedef AMetricSimplex<nodePointerType,doubleType,doubleVecType>  MetricSimplexType;
+    typedef AMetricSimplex<_NodePointerType,DoubleType,DoubleVecType>  MetricSimplexType;
     typedef std::unordered_set <MetricSimplexType*, MetricSimplexHasher<MetricSimplexType*>, 
                                     MetricSimplexEqualTo<MetricSimplexType*> >  MetricSimplexPointersUnorderedSetType;
-    typedef PathPoint<nodePointerType, doubleType>  PathPointType;
+    typedef PathPoint<_NodePointerType, DoubleType>  PathPointType;
     
     // Member variables
-    MetricSimplexPointersUnorderedSetType  AllMetricSimplexPointers;
+    MetricSimplexPointersUnorderedSetType  all_metric_simplex_pointers;
     
-    inline size_t size(void) { return (AllMetricSimplexPointers.size()); }
+    inline size_t size(void) { return (all_metric_simplex_pointers.size()); }
     
     inline MetricSimplexType* find (MetricSimplexType* tmp) { // uses MetricSimplexEqualTo<MetricSimplexType*> to compare
-        auto found_it = AllMetricSimplexPointers.find (tmp);
-        if (found_it!=AllMetricSimplexPointers.end())
+        auto found_it = all_metric_simplex_pointers.find (tmp);
+        if (found_it!=all_metric_simplex_pointers.end())
             return (*found_it);
         else
             return (NULL);
@@ -91,44 +91,44 @@ public:
     
     // functions for creating new simplice
     
-    MetricSimplexType* getEmptySimplex (void) { return (NULL); }
+    MetricSimplexType* get_empty_simplex (void) { return (NULL); }
     
-    MetricSimplexType* createNewZeroSimplex (nodePointerType np);
+    MetricSimplexType* create_new_zero_simplex (_NodePointerType np);
             
-    MetricSimplexType* createNewOneSimplex (nodePointerType just_created, nodePointerType came_from, 
-                                                        doubleType d=std::numeric_limits<doubleType>::quiet_NaN() );
+    MetricSimplexType* create_new_one_simplex (_NodePointerType just_created, _NodePointerType came_from, 
+                                                        DoubleType d=std::numeric_limits<DoubleType>::quiet_NaN() );
     
-    MetricSimplexType* constructSimplexFromVertices  // Use this as the primary simplex-construction routine
-        (_DOSL_SMALL_VECTOR <nodePointerType> nps, 
+    MetricSimplexType* construct_simplex_from_vertices  // Use this as the primary simplex-construction routine
+        (_DOSL_SMALL_VECTOR <_NodePointerType> nps, 
                 unsigned int things_to_compute=COMPUTE_INCREMENTAL_QUANTITIES,
                 bool force_recompute=false, int recursion_depth=0);
     
     // function for modifying simplex
     
-    MetricSimplexType* checkConnectionsAndAddVertex 
-                (MetricSimplexType* inSimplex, nodePointerType np, 
+    MetricSimplexType* check_connections_and_add_vertex 
+                (MetricSimplexType* inSimplex, _NodePointerType np, 
                         unsigned int computation_steps=COMPUTE_INCREMENTAL_QUANTITIES, bool force_recompute=false);
     
     // Maximal simplex construction
     
-    std::unordered_set<nodePointerType> getAllCommonNeighborsOfSimplex (MetricSimplexType* inSimplex_p);
+    std::unordered_set<_NodePointerType> get_all_common_neighbors_of_simplex (MetricSimplexType* in_simplex_p);
     
     std::unordered_set <MetricSimplexType*> getAllMaximalSimplicesFromSet 
-        (std::unordered_set<nodePointerType>* nodeSet_p=NULL, // Will call getAllCommonNeighborsOfSimplex if NULL
+        (std::unordered_set<_NodePointerType>* node_set_p=NULL, // Will call get_all_common_neighbors_of_simplex if NULL
             MetricSimplexType* baseSimplex_p=NULL, unsigned int things_to_compute=COMPUTE_ALL,
-            std::unordered_set<nodePointerType> restricted_neighbor_set = std::unordered_set<nodePointerType>() );
+            std::unordered_set<_NodePointerType> restricted_neighbor_set = std::unordered_set<_NodePointerType>() );
     
-    std::unordered_set <MetricSimplexType*> getAllAttachedMaximalSimplices 
-        (MetricSimplexType* inSimplex_p,
+    std::unordered_set <MetricSimplexType*> get_all_attached_maximal_simplices 
+        (MetricSimplexType* in_simplex_p,
             unsigned int things_to_compute=COMPUTE_ALL, // default: COMPUTE_ALL,
             bool return_base_if_maximal=true, // default: true
-            bool forceCompute=false, // default: false
+            bool force_compute=false, // default: false
             bool use_only_expnded_nodes=false, // default: false
-                std::unordered_set<nodePointerType>* neighbor_node_pointers_p=NULL);
+                std::unordered_set<_NodePointerType>* neighbor_node_pointers_p=NULL);
     
     // ---------------------------------------
     // for path reconstruction
-    PathPointType  findCamefromPoint (const PathPointType& inPathPoint);
+    PathPointType  find_camefrom_point (const PathPointType& in_path_point);
     
 };
 

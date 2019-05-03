@@ -41,20 +41,20 @@
 enum SimplexCompareType {
     // Consider vertex 0 as special: bit 0
         POINTED = 1u,
-    // Compare G-score as well: bit 1
+    // Compare g_score-score as well: bit 1
         GSCORE = 2u
 };
 
 // --------------------------
 
-template <class metricSimplexPointerType, unsigned int compareType=(POINTED|GSCORE)>
+template <class MetricSimplexPointerType, unsigned int CompareType=(POINTED|GSCORE)>
 class MetricSimplexHasher
 {
 public:
-    size_t operator()(const metricSimplexPointerType& sp) const {
+    size_t operator()(const MetricSimplexPointerType& sp) const {
         int compare_start_index = 0;
         size_t hash_val = 0u;
-        if (compareType & POINTED) {
+        if (CompareType & POINTED) {
             hash_val = (((size_t)(sp->p[0])) << 8) * sp->n_vertices;
             compare_start_index = 1;
         }
@@ -64,16 +64,16 @@ public:
     }
 };
 
-template <class metricSimplexPointerType, unsigned int compareType=(POINTED|GSCORE)>
+template <class MetricSimplexPointerType, unsigned int CompareType=(POINTED|GSCORE)>
 class MetricSimplexEqualTo
 {
 public:
-    bool operator()(const metricSimplexPointerType& sp1, const metricSimplexPointerType& sp2) const {
+    bool operator()(const MetricSimplexPointerType& sp1, const MetricSimplexPointerType& sp2) const {
         int i;
         // check vertex count
         if (sp1->p.size() != sp2->p.size())  return (false);
         int compare_start_index = 0;
-        if (compareType & POINTED) {
+        if (CompareType & POINTED) {
             // Check vertex 0 identities
             if (sp1->p[0] != sp2->p[0])  return (false);
             compare_start_index = 1;
@@ -84,7 +84,7 @@ public:
             if (i<0) 
                 return (false);
             // Check g-score
-            if ( (compareType & GSCORE) && (fabs(sp2->gs[i]-sp1->gs[a]) > _MS_DOUBLE_EPS) ) return (false);
+            if ( (CompareType & GSCORE) && (fabs(sp2->gs[i]-sp1->gs[a]) > _MS_DOUBLE_EPS) ) return (false);
         }
         // No need to check edge distances (they will always be same)
         return (true);
@@ -93,26 +93,26 @@ public:
 
 // --------------------------
 
-template <class pair_type>
+template <class PairType>
 class CompareBySecond
 {
 public:
-    bool operator()(const pair_type& p1, const pair_type& p2) const {
+    bool operator()(const PairType& p1, const PairType& p2) const {
         if (p1.second==p2.second) return (p1.first<p2.first);
         else return (p1.second<p2.second);
     }
 };
 
-template <class F, class S>
-using set_of_pairs_ordered_by_second = std::set < std::pair<F,S>, CompareBySecond< std::pair<F,S> > >; // c++11
+template <class f_score, class S>
+using SetOfPairsOrderedBySecond = std::set < std::pair<f_score,S>, CompareBySecond< std::pair<f_score,S> > >; // c++11
 
 // -----------------------------------------------------------------------------------------------
 
-template < class doubleType=double, class doubleVecType=std::vector<doubleType> >
-doubleType DistanceBetweenVertices (doubleVecType& v1, doubleVecType& v2)
+template < class DoubleType=double, class DoubleVecType=std::vector<DoubleType> >
+DoubleType distance_between_vertices (DoubleVecType& v1, DoubleVecType& v2)
 {
-    doubleType sum = 0.0;
-    doubleType diff;
+    DoubleType sum = 0.0;
+    DoubleType diff;
     for (int a=0; a<v1.size(); ++a) {
         diff = v2[a] - v1[a];
         sum += diff*diff;

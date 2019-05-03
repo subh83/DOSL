@@ -44,12 +44,12 @@ private:
 
 public:
     
-    AutoPointer () : new_created(false) { }
-    AutoPointer (T* in_pointer) : new_created(false) { init (in_pointer); }
+    AutoPointer () : new_created(false), instance_p(NULL) { }
+    AutoPointer (T* in_pointer) : new_created(false), instance_p(NULL) { init (in_pointer); }
     
     // explicit init
     
-    void init (T* in_pointer=NULL) { 
+    void init (T* in_pointer=NULL) {
         if (in_pointer) {
             clear(); // clears current pointer
             instance_p = in_pointer;
@@ -61,8 +61,6 @@ public:
         }
     }
     
-    void operator() (T* in_pointer) { init(in_pointer); }
-    
     // Delete / destructor
     
     void clear (void) {
@@ -72,29 +70,46 @@ public:
         new_created = false;
     }
     
-    ~AutoPointer () {
-        clear();
-    }
+    // ---------------------------------
+    
+    // aliases:
+    void new_or_set (T* in_pointer=NULL) { init (in_pointer); }
+    void delete_if_new (void) { clear(); }
     
     // Access
+    // "behave like pointer"
+    T* operator->() { return (instance_p); }
+    T& operator*() { return (*instance_p); }
+    // convert to pointer of type T*
+    operator T*() const { return (instance_p); }
     
-    T* operator->() { init(); return (instance_p); }
-    
-    T& operator*() { init(); return (*instance_p); }
 };
 
 // ====================================================
 // Simplified macro-based auto-pointer
 
-#define COPY_IF_NOTNULL_ELSE_CREATE_POINTER_TO_LOCAL(type,inPointer,copyPointer,defaultVal) \
+/* #define COPY_IF_NOTNULL_ELSE_CREATE_POINTER_TO_LOCAL(type,inPointer,copyPointer,defaultVal) \
                 type _localvalue_ ## copyPointer; \
                 type* copyPointer = & _localvalue_ ## copyPointer; \
                 if (inPointer) copyPointer = inPointer; \
-                else *copyPointer = defaultVal;
+                else *copyPointer = defaultVal; */
+
+// ----------------------------------------------------
+
+/* #define DECLARE_AUTO_POINTER(type,pointerVarName) \
+                type* pointerVarName; \
+                bool _isLocal_ ## pointerVarName;
+
+#define SET_CREATE_AUTO_POINTER(type,pointerVarName,ptr) \
+                if (ptr) { pointerVarName = ptr; _isLocal_ ## pointerVarName = false; } \
+                else { pointerVarName = new type; _isLocal_ ## pointerVarName = true; }
+
+#define FREE_LOCAL_AUTO_POINTER(pointerVarName) \
+                if (_isLocal_ ## pointerVarName) delete pointerVarName; */
 
 // ====================================================
 
-template <class F>
+template <class f_score>
 struct return_type;
 
 template <class R, class C, class... A>
@@ -136,7 +151,7 @@ private:
     
 public:
 
-    // function_pointer instantiation: function_pointer = &F::f
+    // function_pointer instantiation: function_pointer = &f_score::f
     // ------------------------------------------
     
     ExplicitFunctor () : functor_instance_p(NULL), new_created(false), function_pointer(NULL) { /*init();*/ }
@@ -176,7 +191,7 @@ public:
     // ------------
     // operator()
     
-    /*template <class F>
+    /*template <class f_score>
     struct return_type;
 
     template <class R, class... A>

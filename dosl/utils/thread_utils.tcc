@@ -23,53 +23,36 @@
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
-#ifndef _DOSL_DOUBLE_UTILS_HPP
-#define _DOSL_DOUBLE_UTILS_HPP
 
-#include <math.h>
+#ifndef __DOSL_THREAD_UTILS_TCC
+#define __DOSL_THREAD_UTILS_TCC
 
-// ------------------------------------------------------------
-// generic macros
+#include <thread>
+#include <mutex>
 
-#define isEqual_i(x,y)  ((x)==(y))
-#define isLess_i(x,y)  ((x)<(y)) // x < y
-#define isGreater_i(x,y)  ((x)>(y)) // x > y
-#define isLessEq_i(x,y)  ((x)<=(y)) // x <= y
-#define isGreaterEq_i(x,y)  ((x)>=(y)) // x <= y
-
-#define sign(x)    (((x)>0.0)?1.0:(((x)<0.0)?-1.0:0.0))
-#define iround(x)  ((int)round(x))
-
-// ------------------------------------------------------------
-// relaxed comparisons and other macros (appropriate if x and y take discrete values)
-
-#ifndef INFINITESIMAL_DOUBLE
-#define INFINITESIMAL_DOUBLE  1e-8
+#ifndef _DOSL_MULTITHREAD
+#define _DOSL_MULTITHREAD 1
 #endif
 
-#define isEqual_d(x,y)  ( fabs((x)-(y)) < INFINITESIMAL_DOUBLE ) // x == y
-#define isLess_d(x,y)  ( (x)+INFINITESIMAL_DOUBLE < (y) ) // x < y
-#define isGreater_d(x,y)  ( (x) > (y)+INFINITESIMAL_DOUBLE ) // x > y
-#define isLessEq_d(x,y)  (!isGreater_d(x,y)) // x <= y
-#define isGreaterEq_d(x,y)  (!isLess_d(x,y)) // x <= y
+#if _DOSL_MULTITHREAD
+    #define CREATE_MUTEX(name)  std::mutex _ ## name ## _mutex;
+    #define LOCK_MUTEX(name)    _ ## name ## _mutex.lock();
+    #define UNLOCK_MUTEX(name)  _ ## name ## _mutex.unlock();
+#else
+    #define CREATE_MUTEX(name)  
+    #define LOCK_MUTEX(name)    
+    #define UNLOCK_MUTEX(name)  
+#endif
 
-#define sign_d(x)   ((isGreater_d((x),0.0))?1.0:((isLess_d((x),0.0))?-1.0:0.0))
+#define MUTEXED_MEMBER(type,name)   type _ ## name; \
+                                    CREATE_MUTEX(name) \
+                                    void set_ ## name (type& v) { \
+                                        LOCK_MUTEX(name) \
+                                        _ ## name = v; \
+                                        UNLOCK_MUTEX(name) \
+                                    }
+/* Use:
 
-// ------------------------------------------------------------
-// math constnts
-#define PI       3.1415926535897931
-#define PI_BY_3  1.0471975511965976
-#define SQRT3BY2 0.8660254037844386
-#define SQRT2    1.4142135623730951
-#define SQRT3    1.7320508075688772
-
-// ------------------------------------------------------------
-// Functions
-
-int approx_floor (double x, double tol=INFINITESIMAL_DOUBLE) {
-    double ret = floor (x);
-    if (ret+1.0-x<tol) ++ret;
-    return ((int)ret);
-}
+*/
 
 #endif

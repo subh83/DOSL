@@ -51,3 +51,7 @@ examples-run:
 examples-clean:
 	cd examples-dosl && make clean
 
+.PHONY: run-examples
+run-examples:
+	cd examples-dosl && make run
+

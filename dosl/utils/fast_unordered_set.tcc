@@ -33,7 +33,7 @@
 #include <functional>
 
 #include "macros_constants.tcc"
-#include "misc_wrappers.tcc"
+//#include "misc_wrappers.tcc"
 
 #ifndef _DOSL_HASH_BIN_CHECK
 #define _DOSL_HASH_BIN_CHECK 1
@@ -57,36 +57,17 @@ class fast_unordered_set
 /* 'Key' must have "bool operator==(key const &)" overloaded. */
 /* 'HashFunctor' should be a class with "int operator()(key const &)" overloaded */
 private:
-    // hash function
-    typedef unsigned int (HashFunctor::*HashFunctionPointerType)(key &);
-    ExplicitFunctor<HashFunctor, HashFunctionPointerType>  HashFunctorInstance;
+    HashFunctor hash_functor_instance; // hash function
+    EqualToFunctor equal_to_functor_instance; // equal-to function
+    size_t hash_table_size;
     
-    // equal-to function
-    typedef bool (EqualToFunctor::*EqualToFunctionPointerType)(key const &, key const &);
-    ExplicitFunctor<EqualToFunctor, EqualToFunctionPointerType>  EqualToFunctorInstance;
-
 public:
     typedef key Key;
     
-    // parameters (TODO: make private)
-    int HashTableSize;
-    
     // Functions for setting private variables
     
-    void set_hash_table_size (int s) 
-        { if (HashTable) _dosl_err("Hash table already initiated!"); HashTableSize = s; }
-    
-    void set_hash_function (HashFunctor* hash_functor_instance_pointer=NULL, 
-                                    HashFunctionPointerType hash_function_pointer=NULL) {
-        if (HashTable) _dosl_err("Hash table already initiated!");
-        HashFunctorInstance.set_pointers (hash_functor_instance_pointer, hash_function_pointer);
-    }
-    
-    void set_equal_to_function (EqualToFunctor* equalto_functor_instance_pointer=NULL, 
-                                        EqualToFunctionPointerType equalto_function_pointer=NULL) {
-        if (HashTable) _dosl_err("Hash table already initiated!");
-        EqualToFunctorInstance.set_pointers (equalto_functor_instance_pointer, equalto_function_pointer);
-    }
+    void reserve (size_t s) 
+        { if (HashTable) _dosl_err("Hash table already initiated!"); hash_table_size = s; }
     
     // variables
     _DOSL_FAST_VECTOR <Key*>* HashTable; // contsins pointers to the items
@@ -96,7 +77,9 @@ public:
     void init (void);
     
     // Constructors
-    fast_unordered_set() : HashTable(NULL), Size(-1), HashTableSize(1024) { }
+    fast_unordered_set () : HashTable(NULL), Size(-1), hash_table_size(1024) { }
+    fast_unordered_set (size_t n=1024 , const HashFunctor& hf = HashFunctor(), const EqualToFunctor& eql = EqualToFunctor())
+         : HashTable(NULL), Size(-1), hash_table_size(n), hash_functor_instance(hf), equal_to_functor_instance(eql) {  }
     
     // Main interface function
     inline bool empty (void) { return (HashTable==NULL); }
@@ -106,7 +89,7 @@ public:
     // Clear
     void clear (bool destroyHashTable=false) {
         if (HashTable) {
-            for (int a=0; a<HashTableSize; a++)
+            for (int a=0; a<hash_table_size; a++)
                 for (int b=0; b<HashTable[a].size(); b++)
                     delete HashTable[a][b];
             Size = 0;
@@ -121,13 +104,42 @@ public:
     // Destructor
     ~fast_unordered_set() {
         if (HashTable) {
-            for (int a=0; a<HashTableSize; a++)
+            for (int a=0; a<hash_table_size; a++)
                 for (int b=0; b<HashTable[a].size(); b++)
                     delete HashTable[a][b];
             delete[] HashTable;
             HashTable = NULL;
         }
     }
+    
+    // ----------------------------------
+    
+    class forward_iterator {
+    public:
+        fast_unordered_set* p;
+        int bin, pos;
+        forward_iterator (fast_unordered_set* pp, int bb=0, int poss=-1) : p(pp), bin(bb), pos(poss) { if (pos<0) operator++(); }
+        
+        // increment (++fit)
+        forward_iterator& operator++() {
+            do {
+                if (bin >= p->hash_table_size) { bin = p->hash_table_size; pos=0; } // end
+                else if (pos < p->HashTable[bin].size() - 1) ++pos;
+                else { ++bin; pos=-1; }
+            } while (pos<0);
+            return *this;
+        }
+        // compare
+        bool operator==(const forward_iterator& other) { return (bin==other.bin && pos==other.pos); }
+        bool operator!=(const forward_iterator& other) { return (bin!=other.bin || pos!=other.pos); }
+        // pointer
+        key& operator*() const { return *(p->HashTable[bin][pos]); }
+        key*& operator->() const { return (p->HashTable[bin][pos]); }
+    };
+    
+    forward_iterator begin(void) { return forward_iterator(this); }
+    forward_iterator end(void) { return forward_iterator(this, hash_table_size); }
+    
 };
 
 // ==========================================================================================
@@ -138,24 +150,24 @@ void fast_unordered_set<key,HashFunctor,EqualToFunctor>::init (void)
 {
     if (HashTable) _dosl_err("Hash table already initiated! Call clear to reset and re-initiate.");
     
-    HashTable = new _DOSL_FAST_VECTOR <Key*> [ HashTableSize ];
+    HashTable = new _DOSL_FAST_VECTOR <Key*> [ hash_table_size ];
     Size = 0;
 }
 
 template <class key, class HashFunctor, class EqualToFunctor>
 key* fast_unordered_set<key,HashFunctor,EqualToFunctor>::get (key & n)
 {
-    if (!HashTable) init();
+    if (!HashTable) init(); // TODO: remove this check?
     
     // Search in bin
-    unsigned int hashBin = HashFunctorInstance(n);
+    unsigned int hashBin = hash_functor_instance(n);
     #if _DOSL_HASH_BIN_CHECK
-    hashBin %= HashTableSize;
+    hashBin %= hash_table_size;
     #endif
     
-    // A SIGSEGV signal generated from here most likely 'GetHashBin' returned a bin index larger than (HashTableSize-1).
+    // A SIGSEGV signal generated from here most likely 'GetHashBin' returned a bin index larger than (hash_table_size-1).
     for (int a=0; a<HashTable[hashBin].size(); ++a)
-        if ( EqualToFunctorInstance (*(HashTable[hashBin][a]), n) )
+        if ( equal_to_functor_instance (*(HashTable[hashBin][a]), n) )
             return (HashTable[hashBin][a]);
     
     // If new node, create it!

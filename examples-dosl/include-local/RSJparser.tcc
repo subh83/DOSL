@@ -1,7 +1,7 @@
 /** **************************************************************************************
 *                                                                                        *
 *    A Ridiculously Simple JSON Parser for C++ (RSJp-cpp)                                *
-*    Version 2.0                                                                         *
+*    Version 2.x                                                                         *
 *    ----------------------------------------------------------                          *
 *    Copyright (C) 2018  Subhrajit Bhattacharya                                          *
 *                                                                                        *
@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include <utility>
 #include <iostream>
+#include <climits>
 
 
 char const* RSJobjectbrackets = "{}";
@@ -61,19 +62,20 @@ std::string to_string (RSJresourceType rt) {
     }
 }
 
-std::string strtrim (std::string str, std::string chars=" \t\n\r", std::string opts="lr") {
+std::string strtrim (std::string str, std::string chars=" \t\n\r", int max_count=-1, std::string opts="lr") {
     if (str.empty()) return(str);
+    if (max_count<0) max_count = str.length();
     
     if (opts.find('l')!=std::string::npos) { // left trim
         int p;
-        for (p=0; p<str.length(); ++p)
+        for (p=0; p<max_count; ++p)
             if (chars.find(str[p])==std::string::npos) break;
         str.erase (0, p);
     }
     
     if (opts.find('r')!=std::string::npos) { // right trim
         int q, strlenm1=str.length()-1;
-        for (q=0; q<str.length(); ++q)
+        for (q=0; q<max_count; ++q)
             if (chars.find(str[strlenm1-q])==std::string::npos) break;
         str.erase (str.length()-q, q);
     }
@@ -204,6 +206,7 @@ std::string insert_tab_after_newlines (std::string str) {
     return (str);
 }
 
+
 // ============================================================
 
 // forward declarations
@@ -256,9 +259,12 @@ public:
     RSJresource& operator= (const RSJresource& r);
     
     // ------------------------------------
-    // parsers
+    // parsers (old)
     RSJresourceType parse (bool force=false);
-    void parse_full (bool force=false, int* parse_count_for_verbose_p=NULL); // recursively parse the entire JSON text
+    void parse_full (bool force=false, int max_depth=INT_MAX, int* parse_count_for_verbose_p=NULL); // recursively parse the entire JSON text
+    // parser (new)
+    void fast_parse (std::string* str_p=NULL, bool copy_string=false, int max_depth=INT_MAX, int* parse_start_str_pos=NULL); // TODO: finish.
+    
     RSJobject& as_object (bool force=false);
     RSJarray& as_array (bool force=false);
     
@@ -310,7 +316,7 @@ public:
         
         if (typ==RSJ_OBJECT || typ==RSJ_UNKNOWN) {
             // parse as object:
-            content = strtrim (strtrim (content, " {", "l" ), " }", "r" );
+            content = strtrim (strtrim (content, "{", 1, "l" ), "}", 1, "r" );
             if (content.length() != data.length()) { // a valid object
                 std::vector<std::string> nvPairs = split_RSJ_array (content);
                 for (int a=0; a<nvPairs.size(); ++a) {
@@ -329,7 +335,7 @@ public:
         
         if (typ==RSJ_ARRAY || typ==RSJ_UNKNOWN) {
             // parse as array
-            content = strtrim (strtrim (content, " [", "l" ), " ]", "r" );
+            content = strtrim (strtrim (content, "[", 1, "l" ), "]", 1, "r" );
             if (content.length() != data.length()) { // a valid array
                 std::vector<std::string> nvPairs = split_RSJ_array (content);
                 for (int a=0; a<nvPairs.size(); ++a) 
@@ -459,7 +465,8 @@ RSJresourceType RSJresource::parse (bool force) {
     return (parsed_data_p->type);
 }
 
-void RSJresource::parse_full (bool force, int* parse_count_for_verbose_p) {
+void RSJresource::parse_full (bool force, int max_depth, int* parse_count_for_verbose_p) { // recursive parsing (slow)
+    if (max_depth==0) return;
     if (!parsed_data_p)  parsed_data_p = new RSJparsedData;
     if (parsed_data_p->type==RSJ_UNKNOWN || force)  parsed_data_p->parse (data, RSJ_UNKNOWN);
     // verbose
@@ -471,16 +478,162 @@ void RSJresource::parse_full (bool force, int* parse_count_for_verbose_p) {
     // recursive parse children if not already parsed
     if (parsed_data_p->type==RSJ_OBJECT) 
         for (auto it=parsed_data_p->object.begin(); it!=parsed_data_p->object.end(); ++it)
-            it->second.parse_full (force, parse_count_for_verbose_p);
+            it->second.parse_full (force, max_depth-1, parse_count_for_verbose_p);
     else if (parsed_data_p->type==RSJ_ARRAY)
         for (auto it=parsed_data_p->array.begin(); it!=parsed_data_p->array.end(); ++it) 
-            it->parse_full (force, parse_count_for_verbose_p);
+            it->parse_full (force, max_depth-1, parse_count_for_verbose_p);
 }
+
+// ------------------------------------------------------------
+// ============================================================
+// FAST PARSER (Under Construction)
+
+
+int seek_next (std::string* str_p, int start_pos, char character) {
+    
+}
+
+
+void RSJresource::fast_parse (std::string* str_p, bool copy_string, int max_depth, int* parse_start_str_pos) {
+    // TODO: UNDER CONSTRUCTION...
+    
+    if (!str_p)
+        str_p = &data;
+    std::string& str = *str_p;
+    
+    // splits, while respecting brackets and escapes
+    //std::vector<std::string> ret;
+    
+    //std::string current;
+    std::vector<int> bracket_stack;
+    std::vector<int> quote_stack;
+    bool escape_active = false;
+    int bi;
+    
+    bool initial_whitespaces = true;
+    bool isroot = false;
+    
+    if (!parse_start_str_pos) {
+        parse_start_str_pos = new int;
+        *parse_start_str_pos = 0;
+        isroot = true;
+    }
+    
+    int a = *parse_start_str_pos;
+    
+    while (*parse_start_str_pos < str_p->length()) { // *
+        
+        // initial whitespace characters
+        if (initial_whitespaces) {
+            if (str[a] == ' ' || str[a] == '\n' || str[a] == '\r' || str[a] == '\t' ) {
+                ++a;
+                continue;
+            }
+            else {
+                if (str[a] == '{') // start of object
+                    // ... TODO: seek_next ':'
+                
+                initial_whitespaces = false;
+            }
+        }
+        
+        
+        // delimiter
+        if ( bracket_stack.size()==0  &&  quote_stack.size()==0  &&  str[a]==RSJarraydelimiter ) {
+            //ret.push_back (current);
+            
+            //current.clear();
+            bracket_stack.clear(); quote_stack.clear(); escape_active = false;
+            continue; // to *
+        }
+        
+        // ------------------------------------
+        // checks for string
+        
+        if (quote_stack.size() > 0) { // already inside string
+            if (str[a]==RSJcharescape)  // an escape character
+                escape_active = !escape_active;
+            else if (!escape_active  &&  str[a]==RSJstringquotes[quote_stack.back()][1] ) { // close quote
+                quote_stack.pop_back();
+                escape_active = false;
+            }
+            else
+                escape_active = false;
+            
+            //current.push_back (str[a]);
+            continue; // to *
+        }
+        
+        if (quote_stack.size()==0) { // check for start of string
+            if ((bi = is_bracket (str[a], RSJstringquotes)) >= 0) {
+                quote_stack.push_back (bi);
+                //current.push_back (str[a]);
+                continue; // to *
+            }
+        }
+        
+        // ------------------------------------
+        // checks for comments
+        
+        if (quote_stack.size()==0) { // comment cannot start inside string
+            
+            // single-line commenst
+            if (str.compare (a, RSJlinecommentstart.length(), RSJlinecommentstart) == 0) {
+                // ignore until end of line
+                int newline_pos = str.find ("\n", a);
+                if (newline_pos == std::string::npos)
+                    newline_pos = str.find ("\r", a);
+                
+                if (newline_pos != std::string::npos)
+                    a = newline_pos; // point to the newline character (a will be incremented)
+                else // the comment continues until EOF
+                    a = str.length();
+                continue;
+            }
+        }
+        
+        // ------------------------------------
+        // checks for brackets
+        
+        if ( bracket_stack.size()>0  &&  str[a]==RSJbrackets[bracket_stack.back()][1] ) { // check for closing bracket
+            bracket_stack.pop_back();
+            //current.push_back (str[a]);
+            continue;
+        }
+        
+        if ((bi = is_bracket (str[a], RSJbrackets)) >= 0) {
+            bracket_stack.push_back (bi);
+            //current.push_back (str[a]);
+            continue; // to *
+        }
+        
+        // ------------------------------------
+        // otherwise
+        //current.push_back (str[a]);
+    }
+    
+    /*if (current.length() > 0)
+        ret.push_back (current); */
+    
+    if (isroot)
+        delete parse_start_str_pos;
+    
+    // return (ret);
+}
+
+// ============================================================
+
+// ------------------------------------------------------------
 
 RSJobject& RSJresource::as_object (bool force) {
     if (!parsed_data_p)  parsed_data_p = new RSJparsedData;
     if (parsed_data_p->type==RSJ_UNKNOWN || force)  parsed_data_p->parse (data, RSJ_OBJECT);
     return (parsed_data_p->object);
+}
+
+RSJresource& RSJresource::operator[] (std::string key) { // returns reference
+    return ( (as_object())[key] ); // will return empty resource (with _exists==false) if 
+                                            // either this resource does not exist, is not an object, or the key does not exist
 }
 
 RSJarray& RSJresource::as_array (bool force) {
@@ -489,10 +642,19 @@ RSJarray& RSJresource::as_array (bool force) {
     return (parsed_data_p->array);
 }
 
+RSJresource& RSJresource::operator[] (int indx) { // returns reference
+    as_array();
+    if (indx >= parsed_data_p->array.size())
+        parsed_data_p->array.resize(indx+1); // insert empty resources
+    return (parsed_data_p->array[indx]); // will return empty resource (with _exists==false) if 
+                                            // either this resource does not exist, is not an object, or the key does not exist
+}
+
+// ------------------------------------------------------------
 // special 'as':
 
 template <class dataType, class vectorType>
-vectorType RSJresource::as_vector (const vectorType& def) {
+vectorType RSJresource::as_vector (const vectorType& def) { // returns copy -- for being consistent with other 'as' specializations
     if (!exists()) return (def);
     vectorType ret;
     as_array();
@@ -502,7 +664,7 @@ vectorType RSJresource::as_vector (const vectorType& def) {
 }
 
 template <class dataType, class mapType>
-mapType RSJresource::as_map (const mapType& def) {
+mapType RSJresource::as_map (const mapType& def) { // returns copy -- for being consistent with other 'as' specializations
     if (!exists()) return (def);
     mapType ret;
     as_object();
@@ -527,27 +689,11 @@ RSJobject RSJresource::as<RSJobject> (const RSJobject& def) { // returns copy --
     return (as_object());
 }
 
-RSJresource& RSJresource::operator[] (std::string key) { // returns reference
-    return ( (as_object())[key] ); // will return empty resource (with _exists==false) if 
-                                            // either this resource does not exist, is not an object, or the key does not exist
-}
-
-// ------------------------------------
-// RSJ types
-
 // RSJarray
 template <>
 RSJarray  RSJresource::as<RSJarray> (const RSJarray& def) { // returns copy -- for being consistent with other 'as' specializations
     if (!exists()) return (def);
     return (as_array());
-}
-
-RSJresource& RSJresource::operator[] (int indx) { // returns reference
-    as_array();
-    if (indx >= parsed_data_p->array.size())
-        parsed_data_p->array.resize(indx+1); // insert empty resources
-    return (parsed_data_p->array[indx]); // will return empty resource (with _exists==false) if 
-                                            // either this resource does not exist, is not an object, or the key does not exist
 }
 
 // ------------------------------------

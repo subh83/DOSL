@@ -23,53 +23,56 @@
 *                                                                                        *
 *                                                                                        *
 *************************************************************************************** **/
-#ifndef _DOSL_DOUBLE_UTILS_HPP
-#define _DOSL_DOUBLE_UTILS_HPP
 
-#include <math.h>
+#ifndef __DOSL_emptyplanner_TCC
+#define __DOSL_emptyplanner_TCC
+// user-readable
+#define DOSL_ALGORITHM_emptyplanner
 
-// ------------------------------------------------------------
-// generic macros
+// includes
 
-#define isEqual_i(x,y)  ((x)==(y))
-#define isLess_i(x,y)  ((x)<(y)) // x < y
-#define isGreater_i(x,y)  ((x)>(y)) // x > y
-#define isLessEq_i(x,y)  ((x)<=(y)) // x <= y
-#define isGreaterEq_i(x,y)  ((x)>=(y)) // x <= y
+#include <stdio.h>
+#include <cstdlib>
+#include <cmath>
+#include <vector>
+#include <limits>
+#include <string>
+#include <memory>
 
-#define sign(x)    (((x)>0.0)?1.0:(((x)<0.0)?-1.0:0.0))
-#define iround(x)  ((int)round(x))
+#include "../utils/macros_constants.tcc"
+#include "../utils/stl_utils.tcc"
+#include "planner_bits.hpp"
 
-// ------------------------------------------------------------
-// relaxed comparisons and other macros (appropriate if x and y take discrete values)
+/* Naming Conventions:
+    User accessible:
+    - Class or type names:                          'AbcXyzEfg'
+    - Template class/typename parameters:           'abcXyzEfg'
+    
+    - Member variables:                             'abcXyzEfg'
+    - Temporary/internal/local variables:           'abc_xyz_efg'
+    
+    - Member functions that user have access to:    'abcXyzEfg'
+    - Internal functions that user will not use:    'abc_xyz_efg'
+*/
 
-#ifndef INFINITESIMAL_DOUBLE
-#define INFINITESIMAL_DOUBLE  1e-8
-#endif
+class emptyplanner {
+public:
+    declare_alg_name("emptyplanner"); // macro from '_planner_bits'
 
-#define isEqual_d(x,y)  ( fabs((x)-(y)) < INFINITESIMAL_DOUBLE ) // x == y
-#define isLess_d(x,y)  ( (x)+INFINITESIMAL_DOUBLE < (y) ) // x < y
-#define isGreater_d(x,y)  ( (x) > (y)+INFINITESIMAL_DOUBLE ) // x > y
-#define isLessEq_d(x,y)  (!isGreater_d(x,y)) // x <= y
-#define isGreaterEq_d(x,y)  (!isLess_d(x,y)) // x <= y
-
-#define sign_d(x)   ((isGreater_d((x),0.0))?1.0:((isLess_d((x),0.0))?-1.0:0.0))
-
-// ------------------------------------------------------------
-// math constnts
-#define PI       3.1415926535897931
-#define PI_BY_3  1.0471975511965976
-#define SQRT3BY2 0.8660254037844386
-#define SQRT2    1.4142135623730951
-#define SQRT3    1.7320508075688772
-
-// ------------------------------------------------------------
-// Functions
-
-int approx_floor (double x, double tol=INFINITESIMAL_DOUBLE) {
-    double ret = floor (x);
-    if (ret+1.0-x<tol) ++ret;
-    return ((int)ret);
-}
+    class LineageDataType
+    {
+    public:
+        bool defined;
+        int id, generation;
+        
+        LineageDataType () : defined(false) { }
+        LineageDataType (int i, int g=0) : defined(true), id(i), generation(g) { }
+        
+        bool is_set (void) { return (defined); }
+        LineageDataType next_generation(void) { LineageDataType ret(*this); ++(ret.generation); return (ret); }
+    };
+    
+    
+};
 
 #endif

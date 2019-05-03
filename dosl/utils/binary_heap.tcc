@@ -34,21 +34,95 @@
 #include <functional> // std::less
 
 #include "macros_constants.tcc"
-#include "misc_wrappers.tcc"
+//#include "misc_wrappers.tcc"
 
 // ==========================================================================================
 
-template <class key>
+class BinaryHeapElement {
+public:
+    int heap_pos;
+    BinaryHeapElement() : heap_pos(-1) { }
+};
+
+// -----------------
+
+//template <class key>
 class DefautHeapPosFunctor
 {
 public:
+    
+    int& operator() (BinaryHeapElement& k) {
+        return(k.heap_pos);
+    }
+    
+    int& operator() (BinaryHeapElement* k) {
+        //std::cout << "DefautHeapPosFunctor<BinaryHeapElement*>" << std::endl;
+        return(k->heap_pos);
+    }
+    
+    /*int& operator() (BinaryHeapElement const & k) {
+        return(k.heap_pos);
+    }
+    
+    int& operator() (BinaryHeapElement* const & k) {
+        std::cout << "DefautHeapPosFunctor<BinaryHeapElement*>" << std::endl;
+        return(k->heap_pos);
+    }*/
+    
+    // ----
+    // Generic pos
+    /*std::unordered_map <key,int>  keyBoolMap;
+    
+    template <class kk>
+    int& operator() (kk const & k) {
+        std::cout << "DefautHeapPosFunctor with unordered_map lookup" << std::endl;
+        if (keyBoolMap.find(k) == keyBoolMap.end())
+            keyBoolMap[k] = -1;
+        return(keyBoolMap[k]);
+    }*/
+    
+    /*int& operator() (key const & k) { return pos (k ); }
+    
+    int& pos (BinaryHeapElement const & k) {
+        return(k.heap_pos);
+    }
+    
+    int& pos (BinaryHeapElement* const & k) {
+        std::cout << "DefautHeapPosFunctor<BinaryHeapElement*>" << std::endl;
+        return(k->heap_pos);
+    }
+    
     std::unordered_map <key,int>  keyBoolMap;
-    int& operator() (key const & k) {
+    template <class k=key>
+    int& pos (void*, key const & k) {
+        std::cout << "DefautHeapPosFunctor with unordered_map lookup" << std::endl;
         if (keyBoolMap.find(k)==keyBoolMap.end())
             keyBoolMap[k] = -1;
         return(keyBoolMap[k]);
+    }*/
+    
+    
+};
+
+/*
+template <>
+class DefautHeapPosFunctor<BinaryHeapElement>
+{
+public:
+    int& operator() (BinaryHeapElement& k) {
+        return(k.heap_pos);
     }
 };
+
+template <>
+class DefautHeapPosFunctor<BinaryHeapElement*>
+{
+public:
+    int& operator() (BinaryHeapElement* & k) {
+        std::cout << "DefautHeapPosFunctor<BinaryHeapElement*>" << std::endl;
+        return(k->heap_pos);
+    }
+}; */
 
 // -----------------
 
@@ -65,19 +139,21 @@ public:
 
 template <class key,  // use pointer here directly
           class CompareFunctor = simple_less<key>,
-          class HeapPosFunctor = DefautHeapPosFunctor<key> // Provides "int& HeapPosFunctor::operator() (key&)"
+          class HeapPosFunctor = DefautHeapPosFunctor // Provides "int& HeapPosFunctor::operator() (key&)"
           /*, class ComparatorClass = less<key>*/ >
 class binary_heap
 {
 private:
     // cmpare function
-    typedef bool (CompareFunctor::*CompareFunctionPointerType)(key const &, key const &);
-    ExplicitFunctor<CompareFunctor, CompareFunctionPointerType>  CompareFunctorInstance;
+    //typedef bool (CompareFunctor::*CompareFunctionPointerType)(key const &, key const &);
+    //ExplicitFunctor<CompareFunctor, CompareFunctionPointerType>  CompareFunctorInstance;
+    CompareFunctor CompareFunctorInstance;
     
     // heappos function
-    typedef int& (HeapPosFunctor::*HeapPosFunctionPointerType)(key const &); 
+    /*typedef int& (HeapPosFunctor::*HeapPosFunctionPointerType)(key const &); 
                                         // ^^^ TODO: 'const': what if we need to change key?
-    ExplicitFunctor<HeapPosFunctor, HeapPosFunctionPointerType>  HeapPosFunctorInstance;
+    ExplicitFunctor<HeapPosFunctor, HeapPosFunctionPointerType>  HeapPosFunctorInstance;*/
+    HeapPosFunctor  HeapPosFunctorInstance;
     
 public:
     typedef key  Key;
@@ -88,23 +164,26 @@ public:
     typedef enum {UNKNOWN_BUBDIR, UP_BUBDIR, DOWN_BUBDIR} BubbleDirection;
     
     // set the functions
-    void set_compare_function (CompareFunctor* compare_functor_instance_pointer=NULL, 
+    /*void set_compare_function (CompareFunctor* compare_functor_instance_pointer=NULL, 
                                     CompareFunctionPointerType compare_function_pointer=NULL)
-        { CompareFunctorInstance.set_pointers (compare_functor_instance_pointer, compare_function_pointer); }
+        { CompareFunctorInstance.set_pointers (compare_functor_instance_pointer, compare_function_pointer); }*/
     
-    void set_heappos_function (HeapPosFunctor* heappos_functor_instance_pointer=NULL, 
+    /*void set_heappos_function (HeapPosFunctor* heappos_functor_instance_pointer=NULL, 
                                     HeapPosFunctionPointerType heappos_function_pointer=NULL)
-        { HeapPosFunctorInstance.set_pointers (heappos_functor_instance_pointer, heappos_function_pointer); }
+        { HeapPosFunctorInstance.set_pointers (heappos_functor_instance_pointer, heappos_function_pointer); }*/
     
+    binary_heap() { }
+    binary_heap (const CompareFunctor& cf = CompareFunctor(), const HeapPosFunctor& hpf = HeapPosFunctor())
+                : CompareFunctorInstance(cf), HeapPosFunctorInstance(hpf) { }
     
     // Main interface functions
     // push
-    void insert (key const & np);
-    void push (key const & np) { insert(np); }
+    void insert (key & np);
+    void push (key & np) { insert(np); }
     // TODO: void push (Key n);
     // erase
-    void erase (key const & np);
-    void remove (key const & np) { erase(np); }
+    void erase (key & np);
+    void remove (key & np) { erase(np); }
     // update, pop
     Key pop (void);
     void update (Key np, BubbleDirection bubdir=UNKNOWN_BUBDIR);
@@ -171,7 +250,7 @@ void binary_heap<key,CompareFunctor,HeapPosFunctor>::update (Key np, BubbleDirec
 
 
 template <class key, class CompareFunctor, class HeapPosFunctor>
-void binary_heap<key,CompareFunctor,HeapPosFunctor>::insert (key const & np)
+void binary_heap<key,CompareFunctor,HeapPosFunctor>::insert (key & np)
 {
     // Assumes np is not in heap. No check is done for that.
     // Add as leaf
@@ -206,7 +285,7 @@ key binary_heap<key,CompareFunctor,HeapPosFunctor>::pop (void)
 
 
 template <class key, class CompareFunctor, class HeapPosFunctor>
-void binary_heap<key,CompareFunctor,HeapPosFunctor>::erase (key const & np)
+void binary_heap<key,CompareFunctor,HeapPosFunctor>::erase (key& np)
 {
     #if _DOSL_AUTOCORRECT
     if (!(_in_heap(np)))  return;

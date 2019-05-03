@@ -5,7 +5,7 @@
         goal:      [200, 300],
         plot_options: { plot_scale: 2.0,
                         line_thickness: 4.0},
-        top_class: 2,                           // only to be used by 'homotopy2d_PathPlanning'
+        top_class: 2                           // only to be used by 'homotopy2d_PathPlanning'
     },
 
     'empty1':
@@ -14,7 +14,13 @@
         goal:      [20, 280],
         plot_options: { plot_scale: 2.0,
                         line_thickness: 4.0},
-        top_class: 1,
+        top_class: 1
     },
- 
+
+    'L457_partition':
+    {  environment: { pixmap: "L457.png" },    // obstacle map
+        start:    [[60, 60], [200, 300], [30,260], [200,110]] ,
+        plot_options: { plot_scale: 2.0,
+                        line_thickness: 4.0}
+    }
 }

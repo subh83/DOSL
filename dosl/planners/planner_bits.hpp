@@ -31,4 +31,14 @@
                                std::string algorithm_name(void) { return (s); }
 
 
+#define FUNCTOR_BEGIN(functor_name,data_class_name)     class functor_name { \
+                                                        public: \
+                                                            data_class_name* data_p; \
+                                                            functor_name () : data_p(NULL) { } \
+                                                            functor_name (data_class_name* p) : data_p(p) { }
+                                                            
+                                                            // RTYPE operator()(...) { return _this->fun(...); }
+                                                            
+#define FUNCTOR_END(instance_name)                      } instance_name;
+
 #endif

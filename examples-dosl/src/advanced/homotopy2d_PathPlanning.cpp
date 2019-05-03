@@ -133,14 +133,14 @@ public:
     // print
     void print (std::string head="", std::string tail="\n") const {
         _dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ " x=" << x << ", y=" << y << "; ";
-        (G==std::numeric_limits<double>::max())? printf("INF") : printf("G = %0.8f; h = [", G);
+        (g_score==std::numeric_limits<double>::max())? printf("INF") : printf("g_score = %0.8f; h = [", g_score);
         for (int a=0; a<h.size(); ++a){
             printf("%d", a);
             if (a!=h.size()-1) printf(", ");
         } 
         printf("]\n");
-        _dosl_cout << "Successors: ";
-        for (auto it=Successors.begin(); it!=Successors.end(); ++it)
+        _dosl_cout << "successors: ";
+        for (auto it=successors.begin(); it!=successors.end(); ++it)
             printf ("%x (%f), ", it->first, it->second);
         std::cout << tail << _dosl_endl;
     }
@@ -165,7 +165,7 @@ public:
 
 // ==============================================================================
 
-class searchProblem : public _DOSL_ALGORITHM::Algorithm<myNode,double>
+class searchProblem : public _DOSL_ALGORITHM::Algorithm<searchProblem,myNode,double>
 {
 public:
     // Fime names and JSON objects
@@ -252,7 +252,7 @@ public:
         #endif
         
         // Set planner variables
-        AllNodesSet.HashTableSize = ceil(MAX_X - MIN_X + 1);
+        all_nodes_set_p->reserve (ceil(MAX_X - MIN_X + 1));
     }
     
     // -----------------------------------------------------------
@@ -417,7 +417,7 @@ public:
                 #endif
             }
             else {
-                printf ("Expanded, but came-from is NULL!!\n");
+                printf ("expanded, but came-from is NULL!!\n");
                 // pauseForVis = true;
             }
         }
@@ -445,12 +445,12 @@ public:
                 cvPlotPoint (cv_plot_coord(n.x,n.y), col, PLOT_SCALE);
         }
         
-        if (ExpandCount%VIS_INTERVAL == 0  ||  NodeHeap.size() == 0) {
+        if (expand_count%VIS_INTERVAL == 0  ||  node_heap_p->size() == 0) {
             cv::imshow("Display window", image_to_display);
             std::cout << std::flush;
-            if (SAVE_IMG_INTERVAL>0 && ExpandCount%SAVE_IMG_INTERVAL == 0) {
+            if (SAVE_IMG_INTERVAL>0 && expand_count%SAVE_IMG_INTERVAL == 0) {
                 char imgFname[1024];
-                sprintf(imgFname, "%s%s%05d.png", out_folderName.c_str(), imgPrefix.str().c_str(), ExpandCount);
+                sprintf(imgFname, "%s%s%05d.png", out_folderName.c_str(), imgPrefix.str().c_str(), expand_count);
                 cv::imwrite(imgFname, image_to_display);
             }
             cvWaitKey(1); //(10);
@@ -512,7 +512,7 @@ int main(int argc, char *argv[])
     
     for (int i=0; i<test_search_problem.homotopyGoals.size(); ++i) {
         // get path
-        auto path = test_search_problem.reconstructPath (test_search_problem.homotopyGoals[i]);
+        auto path = test_search_problem.reconstruct_weighted_pointer_path (test_search_problem.homotopyGoals[i]);
         double cost = 0.0;
         
         // Print and draw path

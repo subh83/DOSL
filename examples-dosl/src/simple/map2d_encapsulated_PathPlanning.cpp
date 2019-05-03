@@ -35,7 +35,7 @@
 #include <opencv2/highgui.hpp> 
 
 // DOSL
-// #define _DOSL_VERBOSE_ITEMS "reconstructPath,findCamefromPoint"
+// #define _DOSL_VERBOSE_ITEMS "reconstruct_weighted_pointer_path,find_camefrom_point"
 #include <dosl/encapsulations/cvPathPlanner.tcc>
 #include <dosl/aux-utils/string_utils.hpp> // compute_program_path
 

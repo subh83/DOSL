@@ -109,11 +109,11 @@ public:
     // print
     void print (std::string head="", std::string tail="") const {
         _dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ " x=" << x << ", y=" << y << ", ";
-        (G==std::numeric_limits<double>::max())? printf("INF") : printf("%0.8f", G);
+        (g_score==std::numeric_limits<double>::max())? printf("INF") : printf("%0.8f", g_score);
         printf ("\n");
-        _dosl_cout << "\tExpanded=%d" << Expanded << _dosl_endl;
-        _dosl_cout << "Successors: ";
-        for (auto it=Successors.begin(); it!=Successors.end(); ++it)
+        _dosl_cout << "\tExpanded=%d" << expanded << _dosl_endl;
+        _dosl_cout << "successors: ";
+        for (auto it=successors.begin(); it!=successors.end(); ++it)
             printf ("%x (%f), ", it->first, it->second);
         std::cout << tail << _dosl_endl;
     }
@@ -122,7 +122,7 @@ public:
 
 // ==============================================================================
 
-class searchProblem : public _DOSL_ALGORITHM::Algorithm<myNode,double>
+class searchProblem : public _DOSL_ALGORITHM::Algorithm<searchProblem,myNode,double>
 {
 public:
     // Fime names and JSON objects
@@ -332,7 +332,7 @@ public:
         imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "_" << expt_Name << "_";
         
         // Set planner variables
-        AllNodesSet.HashTableSize = ceil(width + 1);
+        all_nodes_set_p->reserve (ceil(width + 1));
     }
     
     // -----------------------------------------------------------
@@ -489,7 +489,7 @@ public:
                 #endif
             }
             else {
-                // printf ("Expanded, but came-from is NULL!!\n");
+                // printf ("expanded, but came-from is NULL!!\n");
                 // pauseForVis = true;
             }
         }
@@ -516,12 +516,12 @@ public:
                 cvPlotPoint (cv_plot_coord(n.x,n.y), col, plot_scale);
         }
         
-        if (ExpandCount%VIS_INTERVAL == 0  ||  NodeHeap.size() == 0) {
+        if (expand_count%VIS_INTERVAL == 0  ||  node_heap_p->size() == 0) {
             cv::imshow("Display window", image_to_display);
             std::cout << std::flush;
-            if (save_image_interval>0 && ExpandCount%save_image_interval == 0) {
+            if (save_image_interval>0 && expand_count%save_image_interval == 0) {
                 char imgFname[1024];
-                sprintf(imgFname, "%s%s%05d.png", out_folderName.c_str(), imgPrefix.str().c_str(), ExpandCount);
+                sprintf(imgFname, "%s%s%05d.png", out_folderName.c_str(), imgPrefix.str().c_str(), expand_count);
                 cv::imwrite(imgFname, image_to_display);
             }
             cvWaitKey(1); //(10);
@@ -566,7 +566,7 @@ int main(int argc, char *argv[])
     test_search_problem.search();
     
     // get path (node, weight tuples)
-    std::vector < std::unordered_map<myNode*,double> > path = test_search_problem.reconstructPath (test_search_problem.goalNode);
+    std::vector < std::unordered_map<myNode*,double> > path = test_search_problem.reconstruct_weighted_pointer_path (test_search_problem.goalNode);
     
     // -------------------------------------
     

@@ -34,9 +34,9 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <cmath>
-#include <ctime>
 #include <vector>
 #include <limits>
+#include <memory>
 #include <type_traits>
 
 #include "../utils/macros_constants.tcc"
@@ -60,21 +60,45 @@ class SStar {
 public:
     declare_alg_name("SStar"); // macro from '_planner_bits'
     
-    // To be derived by user node type
-    template <class nodeType, class costType=double> // CRTP. // costType needs to be a floating point type
-    class Node : public MetricSimplexVertex <nodeType*, costType> // MetricSimplexVertex provides 'G' & 'Successors'
+    class LineageDataType
     {
     public:
-        using MetricSimplexVertex<nodeType*,costType>::G;
-        using MetricSimplexVertex<nodeType*,costType>::Expanded;
-        using MetricSimplexVertex<nodeType*,costType>::Successors;
-
+        bool defined;
+        int id, generation;
+        
+        LineageDataType () : defined(false) { }
+        LineageDataType (int i, int g=0) : defined(true), id(i), generation(g) { }
+        
+        bool is_set (void) { return (defined); }
+        LineageDataType next_generation(void) { LineageDataType ret(*this); ++(ret.generation); return (ret); }
+    };
+    
+    
+    enum DataClearingMode {
+        // for nodes:
+        CLEAR_NODE_SUCCESSORS = 1, // bit 0
+        CLEAR_NODE_LINEAGE = 2, // bit 1
+        CLEAR_NODE_DATA = 3,
+        // search data
+        CLEAR_NODES_HEAP = 4, // bit 2
+        CLEAR_NODES_HASHTABLE = 8 // bit 3
+    };
+    
+    // To be derived by user node type
+    template <class NodeType, class _CostType=double> // CRTP. // CostType needs to be a floating point type
+    class Node : public BinaryHeapElement, public MetricSimplexVertex <NodeType*, _CostType> // MetricSimplexVertex provides 'g_score' & 'successors'
+    {
+    public:
         // Basic vertex related types
-        typedef costType  CostType;
-        typedef nodeType  NodeType;
+        typedef _CostType  CostType;
+        
+        using MetricSimplexVertex<NodeType*,CostType>::g_score;
+        using MetricSimplexVertex<NodeType*,CostType>::expanded;
+        using MetricSimplexVertex<NodeType*,CostType>::successors;
+        
         
         // Simplex related types
-        typedef costType DoubleType;
+        typedef CostType DoubleType;
         typedef AMetricSimplex<NodeType*,DoubleType>  MetricSimplexType;
         typedef MetricSimplexCollection <NodeType*,DoubleType>  MetricSimplexContainerType;
         
@@ -82,37 +106,43 @@ public:
         declare_alg_name("SStar"); // macro from '_planner_bits'
         
         // For keeping track of hash insertion (new node creation)
-        bool PostHashInsertInitiated;
+        bool post_hash_insert_initiated;
+        
+        LineageDataType lineage_data;
         
         // Node specific variables
-        int nodeHeapPos;
         int backTrackVertex;
-        bool SuccessorsCreated;
-        // _DOSL_SMALL_MAP<NodeType*,CostType> Successors; // inherited from 'MetricSimplexVertex'
+        bool successors_created;
+        // _DOSL_SMALL_MAP<NodeType*,CostType> successors; // inherited from 'MetricSimplexVertex'
         
         MetricSimplexType* CameFromSimplex;
         
         // -------------------------------------
         // constructors
-        Node() : PostHashInsertInitiated(false), nodeHeapPos(-1),
-                      backTrackVertex(0), SuccessorsCreated(false), CameFromSimplex(NULL) { }
+        Node() : post_hash_insert_initiated(false),
+                      backTrackVertex(0), successors_created(false), CameFromSimplex(NULL), lineage_data(LineageDataType()) { }
         
         // TODO: Copy constructor to prevent copying these members
         
-        void soft_reset (void) { // reset everything other than successor list
-            PostHashInsertInitiated = false; nodeHeapPos = -1; Expanded = false;
-            backTrackVertex = 0; SuccessorsCreated = false; CameFromSimplex = NULL;
+        void clear_search_data (unsigned int mode = CLEAR_NODE_SUCCESSORS) { // reset everything other than successor list
+            post_hash_insert_initiated = false; expanded = false; //came_from = NULL;
+            heap_pos = -1; g_score = (CostType)0.0; //f_score = (CostType)0.0;
+            if (mode & CLEAR_NODE_SUCCESSORS) { successors.clear(); successors_created = false; }
+            if (mode & CLEAR_NODE_LINEAGE) lineage_data = LineageDataType();
+            backTrackVertex = 0; CameFromSimplex = NULL;
         }
         
         // Define virtual functions of derived class
-        inline CostType HeapKey() { return (G+getHeuristics()); }
+        inline CostType HeapKey() { return (g_score+getHeuristics()); }
         
         // ----------------------------------------------------------------------
         // Functions to be overwritten by user node type
         //      (need not be virtual since use is of only derived class members).
         // Need to have virtual members with same name in the problem class.
         inline int getHashBin (void) { return (0); }
-        inline void getSuccessors (std::vector<nodeType>* s, std::vector<CostType>* c)
+        bool operator==(const NodeType& n)
+            { _dosl_default_fun_warn("'SStar::Node::operator==' OR 'SStar::Algorithm::equalTo'"); }
+        inline void getSuccessors (std::vector<NodeType>* s, std::vector<CostType>* c)
             { _dosl_default_fun_warn("SStar::[Algorithm|Node]::getSuccessors"); }
         inline CostType getHeuristics (void) { return ((CostType)0.0); }
         inline bool bookmarkNode (void) { return (false); }
@@ -122,10 +152,10 @@ public:
         #endif
         inline void print (std::string head="", std::string tail="") { 
             _dosl_cout << _GREEN << head << " (" << this << ")" << GREEN_ << _dosl_endl;
-            _dosl_cout << "Successors: " << Successors << _dosl_endl;
+            _dosl_cout << "successors: " << successors << _dosl_endl;
         }
         // Derived functions. Can also be directly overwritten.
-        inline CostType getHeapKey (double subopEps) { return (G + (CostType)(subopEps*getHeuristics())); }
+        inline CostType getHeapKey (double subopEps) { return (g_score + (CostType)(subopEps*getHeuristics())); }
         
         // ----------------------------------------------------------------------
         // For path reconstruction using getPointerPathToNode. These operators need to be replaced in the derived class.
@@ -141,16 +171,15 @@ public:
 
     // ---------------------------------------------
 
-    template <class nodeType, class costType=double>
+    template <class AlgDerived, class NodeType, class _CostType=double>
     class Algorithm
     {
-    // 'nodeType' should be derived fom 'SStar::Node<CostType>'
+    // 'NodeType' should be derived fom 'SStar::Node<CostType>'
     public:
-        typedef costType  CostType;
-        typedef nodeType  NodeType;
-        NodeType dummy_node; // forces compiler to generate code for the possibly template class 'nodeType'
+        typedef _CostType  CostType;
+        NodeType dummy_node; // forces compiler to generate code for the possibly template class 'NodeType'
         
-        typedef costType DoubleType;
+        typedef CostType DoubleType;
         typedef AMetricSimplex<NodeType*,/*MetricSimplexPointersUnorderedSetType,*/DoubleType>  MetricSimplexType;
         typedef MetricSimplexCollection <NodeType*,DoubleType>  MetricSimplexContainerType;
         typedef _DOSL_SMALL_MAP <NodeType*,DoubleType>  SimplexPointType;
@@ -160,8 +189,8 @@ public:
         
         // Constants
         #if _DOSL_EVENTHANDLER
-        enum nodeEventType {
-            // Expanded: bit 0
+        enum NodeEventType {
+            // expanded: bit 0
                 EXPANDED = 1,
             // Heap event: bits 1, 2
                 HEAP = 2+4,
@@ -173,87 +202,125 @@ public:
         };
         #endif
         
-        // parameters for problem
-        double SubopEps;
-        int ExpandCount;
-        // verbose only
-        int ProgressShowInterval;
-        float timediff;
-        clock_t  StartClock;
-        time_t StartSecond;
-        // Member variables
-        std::vector<NodeType> StartNodes;
-        std::vector<NodeType*> BookmarkNodePointers;
+        // user definable parameters for problem
+        double subopt_eps;
         
-        // Node Set (Hash table)
-        _DOSL_LARGE_UNORDERED_SET <NodeType, Algorithm, Algorithm>  AllNodesSet;
-        bool operator()(const NodeType& n1, const NodeType& n2) { return (n1==n2); } // equal_to // TODO: NodeType const &
+        // counters
+        int expand_count;
+        // verbose only
+        int progress_show_interval;
+        ChronoTimer timer;
+        // Member variables
+        std::vector<NodeType> start_nodes;
+        std::vector<NodeType*> bookmarked_node_pointers;
+        
+        // =====================================================
+        // Main search data containers.
+        
+        // ---------------------------
+        // Node Hash
+        
+        FUNCTOR_BEGIN (NodeHasherFunc, AlgDerived) // declares 'data_p' of type AlgDerived*
+            unsigned int operator()(NodeType& n) { return data_p->getHashBin(n); }
+        FUNCTOR_END (node_hasher_instance) // instanciates Node_hasher
+        
+        FUNCTOR_BEGIN (NodeEqualToFunc, AlgDerived) // declares 'data_p' of type AlgDerived*
+            bool operator()(const NodeType& n1, const NodeType& n2) { return data_p->equalTo(n1,n2); }
+        FUNCTOR_END (node_equal_to_instance) // instanciates Node_equal_to
+        
+        typedef _DOSL_LARGE_UNORDERED_SET<NodeType, NodeHasherFunc, NodeEqualToFunc>  NodesSetType;
+        std::shared_ptr<NodesSetType>  all_nodes_set_p;
+        
+        // ---------------------------
         // Heaps
-        _DOSL_HEAP <NodeType*, Algorithm, Algorithm> NodeHeap;
-        bool operator()(NodeType* const & np1, NodeType* const & np2) { return (getHeapKey(*np1) < getHeapKey(*np2)); } // less_than
+        
+        FUNCTOR_BEGIN (NodeKeyLessThanFunc, AlgDerived) // declares 'data_p' of type AlgDerived*
+            bool operator()(NodeType*& np1, NodeType*& np2) { return (data_p->getHeapKey(*np1) < data_p->getHeapKey(*np2)); }
+        FUNCTOR_END (node_key_less_than_instance) // instanciates Node_hasher
+        
+        typedef _DOSL_HEAP <NodeType*, NodeKeyLessThanFunc>  NodeHeapType;
+        std::shared_ptr<NodeHeapType>  node_heap_p;
+        
+        // ---------------------------
         // store pointers to simplies, just for keeping track
         MetricSimplexContainerType  AllSimplices;
         
+        // =====================================================
+        // ---------------------------
         // Constructors and initiators
-        Algorithm ()
+        Algorithm (AlgDerived* shared_instance_p = NULL) : _this (static_cast<AlgDerived*>(this))
         { 
+            // Copy pointers to containers
+            if (shared_instance_p)
+                all_nodes_set_p = shared_instance_p->all_nodes_set_p;
+            else {
+                node_hasher_instance = NodeHasherFunc (_this);
+                node_equal_to_instance = NodeEqualToFunc (_this);
+                all_nodes_set_p = std::shared_ptr<NodesSetType>(new NodesSetType(4096, node_hasher_instance, node_equal_to_instance) );
+            }
+            
+            if (shared_instance_p)
+                node_heap_p = shared_instance_p->node_heap_p;
+            else {
+                node_key_less_than_instance = NodeKeyLessThanFunc (_this);
+                node_heap_p = std::shared_ptr<NodeHeapType>(new NodeHeapType(node_key_less_than_instance) );
+            }
+            
             // default parameters
-            SubopEps = 1.0;
-            
-            // node hash table
-            AllNodesSet.set_equal_to_function (this);
-            AllNodesSet.set_hash_function (this, &Algorithm::getHashBin); // will call this->getHashBin(const NodeType& n)
-            // node heap
-            NodeHeap.set_compare_function (this);
-            NodeHeap.set_heappos_function (this, &Algorithm::getNodeHeapPos);
-            
-            ProgressShowInterval = 10000;
+            subopt_eps = 1.0;
+            progress_show_interval = 10000;
         }
         
         // Main search functions
         void search (void);
-        void clear (bool clearHeap=true, bool resetNodesInHash=true, unsigned int clearHash=0u);
+        void clear (unsigned int mode = CLEAR_NODE_DATA | CLEAR_NODES_HEAP);
         
         // Functions for reading results
-        std::vector < std::unordered_map <NodeType*, DoubleType> >  reconstructPath (NodeType n);
-        std::vector<nodeType*> reconstructPointerPath (nodeType n, bool convertWeightsToInt=true); // for compatibility with AStar
+        std::vector < std::unordered_map <NodeType*, DoubleType> >  reconstruct_weighted_pointer_path (NodeType n);
+        std::vector<NodeType*> reconstruct_pointer_path (NodeType n, bool convertWeightsToInt=true); // for compatibility with AStar
         // access other node data
-        inline NodeType* getNodePointer (NodeType n) { return (AllNodesSet.get(n)); }
-        inline CostType getCostsToNodes (NodeType n) { return (AllNodesSet.get(n)->G); }
+        inline NodeType* get_node_pointer (NodeType n) { return (all_nodes_set_p->get(n)); }
+        inline CostType get_costs_to_nodes (NodeType n) { return (all_nodes_set_p->get(n)->g_score); }
         // bookmark nodes
-        inline std::vector<NodeType*> getBookmarkNodePointers (void) { return (BookmarkNodePointers); }
+        inline std::vector<NodeType*> get_bookmark_node_pointers (void) { return (bookmarked_node_pointers); }
         
         
         // -----------------------------------------------------
         // functions to be overwritten by user problem instance.
         // Also in node class
-        inline virtual unsigned int getHashBin (NodeType& n) { return (n.getHashBin()); }
-        inline virtual void getSuccessors (NodeType &n, std::vector<NodeType>* const s, std::vector<CostType>* const c)
+        inline unsigned int getHashBin (NodeType& n) { return (n.getHashBin()); }
+        bool equalTo (const NodeType &n1, const NodeType &n2) { return (n1==n2); }
+        inline void getSuccessors (NodeType &n, std::vector<NodeType>* const s, std::vector<CostType>* const c)
                                             { return (n.getSuccessors(s,c)); }
-        inline virtual CostType getHeuristics (NodeType& n) { return (n.getHeuristics()); }
-        inline virtual std::vector<NodeType> getStartNodes (void)
+        inline CostType getHeuristics (NodeType& n) { return (n.getHeuristics()); }
+        inline std::vector<NodeType> getStartNodes (void)
             { _dosl_default_fun_warn("SStar::Algorithm::getStartNodes"); return (std::vector<NodeType>()); }
-        inline virtual bool bookmarkNode (NodeType &n) { return (n.bookmarkNode()); }
-        inline virtual bool stopSearch (NodeType &n) { return (n.stopSearch()); }
+        inline bool bookmarkNode (NodeType &n) { return (n.bookmarkNode()); }
+        inline bool stopSearch (NodeType &n) { return (n.stopSearch()); }
         #if _DOSL_EVENTHANDLER
-        inline virtual void nodeEvent (NodeType &n, unsigned int e) { n.nodeEvent(e); }
+        inline void nodeEvent (NodeType &n, unsigned int e) { n.nodeEvent(e); }
         #endif
         inline virtual void print (NodeType &n, std::string head) { n.print(head); }
         // Derived functions. Can also be directly overwritten.
-        inline virtual CostType getHeapKey (NodeType& n) { return (n.G + (CostType)(SubopEps*getHeuristics(n))); }
+        inline CostType getHeapKey (NodeType& n) { return (n.g_score + (CostType)(subopt_eps * _this->getHeuristics(n))); }
         
         // -------------------------------------------------
     private:
+        AlgDerived* _this;
+        
         // Derived and helper functions
-        int& getNodeHeapPos (NodeType* const & np) { return (np->nodeHeapPos); }
-        void GenerateSuccessors (NodeType* nodeInHash_p);
+        void generate_successors (NodeType* node_in_hash_p);
         // S-star specific:
-        void CheckAndPushNodeIntoHeap (NodeType* nodeInHash_p, bool heapKeyUpdated=true, bool cascadeToChildren=false);
+        void CheckAndPushNodeIntoHeap (NodeType* node_in_hash_p, bool heapKeyUpdated=true, bool cascadeToChildren=false);
         
         // Temporary variables
-        std::vector<NodeType> thisSuccessors;
-        std::vector<CostType> thisTransitionCosts;
+        std::vector<NodeType> this_successors;
+        std::vector<CostType> this_transition_costs;
         int a;
+        
+        // Preventing making copies of an instance of the search class
+        Algorithm (const Algorithm& alg);
+        Algorithm& operator=(const Algorithm& alg);
     };
 
 };
@@ -262,193 +329,190 @@ public:
 
 // Basic member functions (not for end-user use)
 
-template <class nodeType, class costType>
-void SStar::Algorithm<nodeType,costType>::GenerateSuccessors (NodeType* nodeInHash_p)
+template <class AlgDerived, class NodeType, class CostType>
+void SStar::Algorithm<AlgDerived,NodeType,CostType>::generate_successors (NodeType* node_in_hash_p)
 {
-    if ( !(nodeInHash_p->SuccessorsCreated) ) // Successors were not generated previously
+    if ( !(node_in_hash_p->successors_created) ) // successors were not generated previously
     {
-        thisSuccessors.clear();
-        thisTransitionCosts.clear();
-        getSuccessors (*nodeInHash_p, &thisSuccessors, &thisTransitionCosts);
+        this_successors.clear();
+        this_transition_costs.clear();
+        _this->getSuccessors (*node_in_hash_p, &this_successors, &this_transition_costs);
         
         #if _DOSL_DEBUG
-        if (thisSuccessors.size()!=thisTransitionCosts.size())
-            _dosl_err("Number of successors (%d) is different from numer of transition costs (%d) as returned by 'getSuccessors'.", thisSuccessors.size(), thisTransitionCosts.size());
+        if (this_successors.size()!=this_transition_costs.size())
+            _dosl_err("Number of successors (%d) is different from numer of transition costs (%d) as returned by 'getSuccessors'.", this_successors.size(), this_transition_costs.size());
         #endif
         
-        nodeInHash_p->Successors.reserve (thisSuccessors.size()); // reserve space for fast pushing
-        for (a=0; a<thisSuccessors.size(); a++) {
-            thisSuccessors[a].soft_reset(); // in case the successors were created from copies of this
-            nodeInHash_p->Successors.insert (
-                _DOSL_SMALL_MAP_pairfun (AllNodesSet.get(thisSuccessors[a]), thisTransitionCosts[a]) );
+        node_in_hash_p->successors.reserve (this_successors.size()); // reserve space for fast pushing
+        for (a=0; a<this_successors.size(); a++) {
+            this_successors[a].clear_search_data (CLEAR_NODE_SUCCESSORS); // in case the successors were created from copies of this
+            node_in_hash_p->successors.insert (
+                _DOSL_SMALL_MAP_pairfun (all_nodes_set_p->get(this_successors[a]), this_transition_costs[a]) );
         }
-        nodeInHash_p->SuccessorsCreated = true;
+        node_in_hash_p->successors_created = true;
     }
 }
 
 // -------------------------------------------------------------------------------------
 
-template <class nodeType, class costType>
-void SStar::Algorithm<nodeType,costType>::CheckAndPushNodeIntoHeap (NodeType* nodeInHash_p, bool heapKeyUpdated,
+template <class AlgDerived, class NodeType, class CostType>
+void SStar::Algorithm<AlgDerived,NodeType,CostType>::CheckAndPushNodeIntoHeap (NodeType* node_in_hash_p, bool heapKeyUpdated,
                                                                             bool cascadeToChildren)
 {
-    nodeInHash_p->Expanded = false;
+    node_in_hash_p->expanded = false;
     
-    if (nodeInHash_p->nodeHeapPos < 0) { // may already in heap due to earlier initiated backtracking
-        NodeHeap.insert (nodeInHash_p);
+    if (node_in_hash_p->heap_pos < 0) { // may already in heap due to earlier initiated backtracking
+        node_heap_p->insert (node_in_hash_p);
         #if _DOSL_EVENTHANDLER
-        nodeEvent (*nodeInHash_p, PUSHED);
+        _this->nodeEvent (*node_in_hash_p, PUSHED);
         #endif
     } else if (heapKeyUpdated) {
-        NodeHeap.update (nodeInHash_p);
+        node_heap_p->update (node_in_hash_p);
         #if _DOSL_EVENTHANDLER
-        nodeEvent (*nodeInHash_p, UPDATED);
+        _this->nodeEvent (*node_in_hash_p, UPDATED);
         #endif
     }
     
     // TODO: Implement for  cascadeToChildren = true
     if (cascadeToChildren)
-        for (auto it=nodeInHash_p->ChildrenInfluenced.begin(); it!=nodeInHash_p->ChildrenInfluenced.end(); ++it)
+        for (auto it=node_in_hash_p->children_influenced.begin(); it!=node_in_hash_p->children_influenced.end(); ++it)
             CheckAndPushNodeIntoHeap (*it, heapKeyUpdated, cascadeToChildren);
 }
 
 // -------------------------------------------------------------------------------------
 
-template <class nodeType, class costType>
-void SStar::Algorithm<nodeType,costType>::search (void)
+template <class AlgDerived, class NodeType, class CostType>
+void SStar::Algorithm<AlgDerived,NodeType,CostType>::search (void)
 {
     _dosl_verbose_head(1);
     
-    StartNodes = getStartNodes();
+    start_nodes = _this->getStartNodes();
     
     #if _DOSL_DEBUG
-    if (StartNodes.size()==0)
+    if (start_nodes.size()==0)
         _dosl_err("No start node given! Please define the 'getStartNodes' function in the problem class.");
     #endif
     
-    ExpandCount = 0;
+    expand_count = 0;
     if (_dosl_verbose_on(0)) {
-        timediff = 0.0;
-        StartClock = clock();
-        StartSecond = time(NULL);
+        timer.start();
     }
     
     // Temporary variables
     NodeType* thisNodeInHash_p;
-    NodeType* thisNeighbourNodeInHash_p;
+    NodeType* this_neighbour_node_in_hash_p;
     CostType thisTransitionCost, test_g_val;
     
     // -----------------------------------
     // Insert start nodes into open list
-    for (a=0; a<StartNodes.size(); a++) {
+    for (a=0; a<start_nodes.size(); a++) {
+        start_nodes[a].clear_search_data (CLEAR_NODE_SUCCESSORS | CLEAR_NODE_LINEAGE); // in case this node is output of a previous search
         // put start node in hash
-        thisNodeInHash_p = AllNodesSet.get (StartNodes[a]);
+        thisNodeInHash_p = all_nodes_set_p->get (start_nodes[a]);
         // set member variables for start node
-        thisNodeInHash_p->Expanded = false;
+        if (!(thisNodeInHash_p->lineage_data.is_set()))
+            thisNodeInHash_p->lineage_data = LineageDataType(a);
+        thisNodeInHash_p->expanded = false;
         thisNodeInHash_p->backTrackVertex = 0;
-        thisNodeInHash_p->G = (CostType)0.0;
+        thisNodeInHash_p->g_score = (CostType)0.0;
         // push in heap
-        if (thisNodeInHash_p->nodeHeapPos < 0) { // should not push the same node twice into heap
-            NodeHeap.insert (thisNodeInHash_p);
+        if (thisNodeInHash_p->heap_pos < 0) { // should not push the same node twice into heap
+            node_heap_p->insert (thisNodeInHash_p);
             #if _DOSL_EVENTHANDLER
-            nodeEvent (*thisNodeInHash_p, PUSHED);
+            _this->nodeEvent (*thisNodeInHash_p, PUSHED);
             #endif
         }
-        thisNodeInHash_p->PostHashInsertInitiated = true;
+        thisNodeInHash_p->post_hash_insert_initiated = true;
     }
     
     // -----------------------------------
     // Main loop
-    while (!(NodeHeap.empty()))
+    while (!(node_heap_p->empty()))
     {
         if (_dosl_verbose_on(0))
-            if(ProgressShowInterval>0) {
-                if (ExpandCount % ProgressShowInterval == 0) {
-                    if (timediff>=0.0)  timediff = ((float)(clock()-StartClock)) / ((float)CLOCKS_PER_SEC);
-                    _dosl_printf("Number of states Expanded: %d. Number of simplices ceated: %d. Node heap size: %d." 
-                                        "Time elapsed: %F s.", ExpandCount, AllSimplices.size(), NodeHeap.size(), 
-                                        ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
+            if(progress_show_interval>0) {
+                if (expand_count % progress_show_interval == 0) {
+                    _dosl_printf("Number of states expanded: %d. Number of simplices ceated: %d. Node heap size: %d." 
+                                        "Time elapsed: %f_score s.", expand_count, AllSimplices.size(), node_heap_p->size(), timer.read());
                 }
             }
-        ExpandCount++;
+        expand_count++;
         
-        // get the node with least F-value
-        thisNodeInHash_p = NodeHeap.pop();
+        // get the node with least f_score-value
+        thisNodeInHash_p = node_heap_p->pop();
         
         // Generate the neighbours if they are already not generated
-        GenerateSuccessors (thisNodeInHash_p);
+        generate_successors (thisNodeInHash_p);
         
         // Generate successors of unexpanded neighbors
-        for (auto it=thisNodeInHash_p->Successors.begin(); it!=thisNodeInHash_p->Successors.end(); ++it) {
-            thisNeighbourNodeInHash_p = it->first;
-            if (!(thisNeighbourNodeInHash_p->Expanded)) 
-                GenerateSuccessors (thisNeighbourNodeInHash_p);
+        for (auto it=thisNodeInHash_p->successors.begin(); it!=thisNodeInHash_p->successors.end(); ++it) {
+            this_neighbour_node_in_hash_p = it->first;
+            if (!(this_neighbour_node_in_hash_p->expanded)) 
+                generate_successors (this_neighbour_node_in_hash_p);
         }
         
         #if _DOSL_CHECK_GRAPH_DIRECTIONALITY >= 2
-        for (auto it=thisNodeInHash_p->Successors.begin(); it!=thisNodeInHash_p->Successors.end(); ++it)
-            if ( it->first->SuccessorsCreated  &&  
-                    it->first->Successors.find(thisNodeInHash_p)==it->first->Successors.end() ) {
+        for (auto it=thisNodeInHash_p->successors.begin(); it!=thisNodeInHash_p->successors.end(); ++it)
+            if ( it->first->successors_created  &&  
+                    it->first->successors.find(thisNodeInHash_p)==it->first->successors.end() ) {
                 thisNodeInHash_p->print("node being expanded: ");
                 it->first->print("neighbor not containg expanding node in its successor: ");
                 _dosl_warn("Asymmetric successors (not an undirected graph as is required by SStar). Autofixing.\n");
-                it->first->Successors [thisNodeInHash_p] = thisNodeInHash_p->Successors[it->first];
+                it->first->successors [thisNodeInHash_p] = thisNodeInHash_p->successors[it->first];
             }
-        for (auto it=thisNeighbourNodeInHash_p->Successors.begin(); it!=thisNeighbourNodeInHash_p->Successors.end(); ++it)
-            if ( it->first->SuccessorsCreated  &&  
-                    it->first->Successors.find(thisNeighbourNodeInHash_p)==it->first->Successors.end() ) {
-                thisNeighbourNodeInHash_p->print("node being updated: ");
+        for (auto it=this_neighbour_node_in_hash_p->successors.begin(); it!=this_neighbour_node_in_hash_p->successors.end(); ++it)
+            if ( it->first->successors_created  &&  
+                    it->first->successors.find(this_neighbour_node_in_hash_p)==it->first->successors.end() ) {
+                this_neighbour_node_in_hash_p->print("node being updated: ");
                 it->first->print("neighbor not containg expanding node in its successor: ");
                 _dosl_warn("Asymmetric successors (not an undirected graph as is required by SStar). Autofixing.\n");
-                it->first->Successors [thisNeighbourNodeInHash_p] = thisNeighbourNodeInHash_p->Successors[it->first];
+                it->first->successors [this_neighbour_node_in_hash_p] = this_neighbour_node_in_hash_p->successors[it->first];
             }
         #endif
         
         // -----------------------------------------------------
         // Expand
         
-        thisNodeInHash_p->Expanded = true; // Put in closed list
+        thisNodeInHash_p->expanded = true; // Put in closed list
         
         if (_dosl_verbose_on(1)) {
             _dosl_printf (_YELLOW "=========================================================" YELLOW_);
             thisNodeInHash_p->print("Now expanding: ");
-            _dosl_printf ("G-value at expanding node: %f.", thisNodeInHash_p->G);
+            _dosl_printf ("g_score-value at expanding node: %f.", thisNodeInHash_p->g_score);
         }
         
         #if _DOSL_EVENTHANDLER
         //eventExpanded (*thisNodeInHash_p);
-        nodeEvent (*thisNodeInHash_p, EXPANDED|POPPED);
+        _this->nodeEvent (*thisNodeInHash_p, EXPANDED|POPPED);
         #endif
         
         // Check if we need to bookmark the node being Expanded
-        if ( bookmarkNode (*thisNodeInHash_p) )
+        if ( _this->bookmarkNode (*thisNodeInHash_p) )
         {
-            BookmarkNodePointers.push_back (thisNodeInHash_p);
+            bookmarked_node_pointers.push_back (thisNodeInHash_p);
             if (_dosl_verbose_on(0)) {
-                if (timediff>=0.0)  timediff = ((float)(clock()-StartClock)) / ((float)CLOCKS_PER_SEC);
                 thisNodeInHash_p->print ("Bookmarked a node: ");
                 _dosl_printf ("... Number of states expanded: %d. Heap size: %d. Time elapsed: %f s.", 
-                        ExpandCount, NodeHeap.size(), ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
+                        expand_count, node_heap_p->size(), timer.read());
             }
         }
         // Check if we need to stop furthur expansion
-        if ( stopSearch (*thisNodeInHash_p) ) {
+        if ( _this->stopSearch (*thisNodeInHash_p) ) {
             if (_dosl_verbose_on(0)) 
-                if (ProgressShowInterval>0) {
-                    if (timediff>=0.0)  timediff = ((float)(clock()-StartClock)) / ((float)CLOCKS_PER_SEC);
+                if (progress_show_interval>0) {
                     thisNodeInHash_p->print ("Stopping search ('stopSearch' returned true) at: ");
                     _dosl_printf ("... Number of states expanded: %d. Heap size: %d. Time elapsed: %f s.", 
-                            ExpandCount, NodeHeap.size(), ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
+                            expand_count, node_heap_p->size(), timer.read());
                 }
             return;
         }
         
         // -----------------------------------------------------
         
-        // Initiate the neighbours (if required) and update their G & F values
-        for (auto it = thisNodeInHash_p->Successors.begin(); it!=thisNodeInHash_p->Successors.end(); ++it)
+        // Initiate the neighbours (if required) and update their g_score & f_score values
+        for (auto it = thisNodeInHash_p->successors.begin(); it!=thisNodeInHash_p->successors.end(); ++it)
         {
-            thisNeighbourNodeInHash_p = it->first;
+            this_neighbour_node_in_hash_p = it->first;
             thisTransitionCost = it->second;
             
             if (_dosl_verbose_on(1)) {
@@ -459,30 +523,31 @@ void SStar::Algorithm<nodeType,costType>::search (void)
             // ----------------------------------------
             bool neighborJustCreated = false;
             
-            // An uninitiated neighbour node - definitely G & F values not set either.
-            if (!(thisNeighbourNodeInHash_p->PostHashInsertInitiated)) {
-                thisNeighbourNodeInHash_p->Expanded = false;
-                thisNeighbourNodeInHash_p->backTrackVertex = 0;
-                thisNeighbourNodeInHash_p->PostHashInsertInitiated = true; // Always set this when other variables have already been set
+            // An uninitiated neighbour node - definitely g_score & f_score values not set either.
+            if (!(this_neighbour_node_in_hash_p->post_hash_insert_initiated)) {
+                this_neighbour_node_in_hash_p->expanded = false;
+                this_neighbour_node_in_hash_p->lineage_data = thisNodeInHash_p->lineage_data.next_generation();
+                this_neighbour_node_in_hash_p->backTrackVertex = 0;
+                this_neighbour_node_in_hash_p->post_hash_insert_initiated = true; // Always set this when other variables have already been set
                 
                 neighborJustCreated = true;
                 if (_dosl_verbose_on(1)) {
-                    thisNeighbourNodeInHash_p->print("Child generated for the first time: ");
+                    this_neighbour_node_in_hash_p->print("Child generated for the first time: ");
                     _dosl_printf ("Transition cost to child: %f.", thisTransitionCost);
                 }
                 
             }
             
             bool isTestingForUnexpanding = false;
-            if (thisNeighbourNodeInHash_p->Expanded) {
+            if (this_neighbour_node_in_hash_p->expanded) {
                 isTestingForUnexpanding = true;
                 if (_dosl_verbose_on(1)) {
-                    thisNeighbourNodeInHash_p->print("Child ALREADY expanded (will check improvement): ");
+                    this_neighbour_node_in_hash_p->print("Child ALREADY expanded (will check improvement): ");
                 }
             }
             else {
                 if (_dosl_verbose_on(1)) {
-                    thisNeighbourNodeInHash_p->print("Child not expanded (will check improvement): ");
+                    this_neighbour_node_in_hash_p->print("Child not expanded (will check improvement): ");
                 }
             }
             
@@ -500,7 +565,7 @@ void SStar::Algorithm<nodeType,costType>::search (void)
             // ----------------------------------------------------
             // Attached simplices
             
-            one_simplex  = AllSimplices.createNewOneSimplex (thisNeighbourNodeInHash_p, thisNodeInHash_p, thisTransitionCost);
+            one_simplex  = AllSimplices.create_new_one_simplex (this_neighbour_node_in_hash_p, thisNodeInHash_p, thisTransitionCost);
             if (_dosl_verbose_on(1)) {
                 one_simplex->print ("Edge (1-simplex) created:");
             }
@@ -508,10 +573,10 @@ void SStar::Algorithm<nodeType,costType>::search (void)
             
             std::unordered_set<MetricSimplexType*> attachedMaximalSimplices = 
                             //AllSimplices.constructAllAttachedMaximalSimplices (one_simplex, &allCommonNeighbors);
-                            AllSimplices.getAllAttachedMaximalSimplices (one_simplex,
+                            AllSimplices.get_all_attached_maximal_simplices (one_simplex,
                                                                             COMPUTE_ALL, true, false, // <-- defauts
                                                                             true // <-- use ony expanded vertices
-                                                                                ); // also computed G-score
+                                                                                ); // also computed g_score-score
             
             if (_dosl_verbose_on(2)) {
                 _dosl_printf (_YELLOW "Number of attached maximal simplices of %x (possibly including self) = %d" YELLOW_, 
@@ -524,9 +589,9 @@ void SStar::Algorithm<nodeType,costType>::search (void)
                 if (_dosl_verbose_on(2)) {
                     (*it2)->print ("Attached maximal simplex:");
                 }
-                if ((*it2)->G < test_g_val) {
+                if ((*it2)->g_score < test_g_val) {
                     test_came_from_simplex = *it2;
-                    test_g_val = (*it2)->G; // G-score through the different simplices.
+                    test_g_val = (*it2)->g_score; // g_score-score through the different simplices.
                 }
             }
             
@@ -535,35 +600,35 @@ void SStar::Algorithm<nodeType,costType>::search (void)
             
             if (test_came_from_simplex) {
                 if (isTestingForUnexpanding)
-                    ++(test_came_from_simplex->backTrackSimplex);
+                    ++(test_came_from_simplex->back_track_simplex);
             }
             #if _DOSL_CHECK_GRAPH_DIRECTIONALITY >= 1
             else { // test_came_from_simplex==NULL
-                for (auto it=thisNodeInHash_p->Successors.begin(); it!=thisNodeInHash_p->Successors.end(); ++it)
-                    if ( it->first->SuccessorsCreated  &&  
-                            it->first->Successors.find(thisNodeInHash_p)==it->first->Successors.end() ) {
+                for (auto it=thisNodeInHash_p->successors.begin(); it!=thisNodeInHash_p->successors.end(); ++it)
+                    if ( it->first->successors_created  &&  
+                            it->first->successors.find(thisNodeInHash_p)==it->first->successors.end() ) {
                         thisNodeInHash_p->print("node being expanded: ");
                         it->first->print("neighbor not containg expanding node in its successor: ");
                         /*#if _DOSL_AUTO_FIX_GRAPH_DIRECTIONALITY
                         _dosl_warn("Asymmetric successors (not an undirected graph as is required by SStar). Autofixing.\n");
-                        it->first->Successors [thisNodeInHash_p] = thisNodeInHash_p->Successors[it->first];
+                        it->first->successors [thisNodeInHash_p] = thisNodeInHash_p->successors[it->first];
                         #else*/
-                        nodeEvent (*thisNodeInHash_p, ERROR);
-                        nodeEvent (*(it->first), ERROR);
+                        _this->nodeEvent (*thisNodeInHash_p, ERROR);
+                        _this->nodeEvent (*(it->first), ERROR);
                         _dosl_err("Asymmetric successors (not an undirected graph as is required by SStar).\n");
                         //#endif
                     }
-                for (auto it=thisNeighbourNodeInHash_p->Successors.begin(); it!=thisNeighbourNodeInHash_p->Successors.end(); ++it)
-                    if ( it->first->SuccessorsCreated  &&  
-                            it->first->Successors.find(thisNeighbourNodeInHash_p)==it->first->Successors.end() ) {
-                        thisNeighbourNodeInHash_p->print("node being updated: ");
+                for (auto it=this_neighbour_node_in_hash_p->successors.begin(); it!=this_neighbour_node_in_hash_p->successors.end(); ++it)
+                    if ( it->first->successors_created  &&  
+                            it->first->successors.find(this_neighbour_node_in_hash_p)==it->first->successors.end() ) {
+                        this_neighbour_node_in_hash_p->print("node being updated: ");
                         it->first->print("neighbor not containg expanding node in its successor: ");
                         /*#if _DOSL_AUTO_FIX_GRAPH_DIRECTIONALITY
                         _dosl_warn("Asymmetric successors (not an undirected graph as is required by SStar). Autofixing.\n");
-                        it->first->Successors [thisNeighbourNodeInHash_p] = thisNeighbourNodeInHash_p->Successors[it->first];
+                        it->first->successors [this_neighbour_node_in_hash_p] = this_neighbour_node_in_hash_p->successors[it->first];
                         #else */
-                        nodeEvent (*thisNeighbourNodeInHash_p, ERROR);
-                        nodeEvent (*(it->first), ERROR);
+                        _this->nodeEvent (*this_neighbour_node_in_hash_p, ERROR);
+                        _this->nodeEvent (*(it->first), ERROR);
                         _dosl_err("Asymmetric successors (not an undirected graph as is required by SStar).\n");
                         // #endif
                     }
@@ -573,93 +638,99 @@ void SStar::Algorithm<nodeType,costType>::search (void)
             // ---------------------------------------------------------
             if (_dosl_verbose_on(1)) {
                 _dosl_printf_nobreak ("Test g-score of child (%x) = %f (through simplex %x). Current g-score = ", 
-                                    thisNeighbourNodeInHash_p, test_g_val, test_came_from_simplex);
-                (thisNeighbourNodeInHash_p->G==std::numeric_limits<double>::max())?
-                                        printf("INF\n") : printf("%f\n", thisNeighbourNodeInHash_p->G);
+                                    this_neighbour_node_in_hash_p, test_g_val, test_came_from_simplex);
+                (this_neighbour_node_in_hash_p->g_score==std::numeric_limits<double>::max())?
+                                        printf("INF\n") : printf("%f\n", this_neighbour_node_in_hash_p->g_score);
             }
             
             // compare & update
             if (neighborJustCreated) { // it's a 1-simplex for sure
-                thisNeighbourNodeInHash_p->G = test_g_val;
-                thisNeighbourNodeInHash_p->CameFromSimplex = test_came_from_simplex;
-                thisNeighbourNodeInHash_p->CameFromSimplex->SetChildInfluence();
+                this_neighbour_node_in_hash_p->g_score = test_g_val;
+                this_neighbour_node_in_hash_p->lineage_data = test_came_from_simplex->p[0]->lineage_data.next_generation();
+                this_neighbour_node_in_hash_p->CameFromSimplex = test_came_from_simplex;
+                this_neighbour_node_in_hash_p->CameFromSimplex->SetChildInfluence();
                 if (_dosl_verbose_on(1)) {
-                    _dosl_printf (_YELLOW "Set G of child (%x) to %f" YELLOW_, thisNeighbourNodeInHash_p, thisNeighbourNodeInHash_p->G);
+                    _dosl_printf (_YELLOW "Set g_score of child (%x) to %f" YELLOW_, this_neighbour_node_in_hash_p, this_neighbour_node_in_hash_p->g_score);
                 }
                 
-                NodeHeap.push (thisNeighbourNodeInHash_p);
+                node_heap_p->push (this_neighbour_node_in_hash_p);
                 #if _DOSL_EVENTHANDLER
-                nodeEvent (*thisNeighbourNodeInHash_p, PUSHED);
+                _this->nodeEvent (*this_neighbour_node_in_hash_p, PUSHED);
                 #endif
             }
-            else if (thisNeighbourNodeInHash_p->G - test_g_val > _MS_DOUBLE_EPS) {
-                double previous_g_val =  thisNeighbourNodeInHash_p->G;
+            else if (this_neighbour_node_in_hash_p->g_score - test_g_val > _MS_DOUBLE_EPS) {
+                double previous_g_val =  this_neighbour_node_in_hash_p->g_score;
                 
-                thisNeighbourNodeInHash_p->G = test_g_val;
-                thisNeighbourNodeInHash_p->CameFromSimplex->UnsetChildInfluence(); // unset for previous came-from-simplex
-                thisNeighbourNodeInHash_p->CameFromSimplex = test_came_from_simplex;
-                thisNeighbourNodeInHash_p->CameFromSimplex->SetChildInfluence();
+                this_neighbour_node_in_hash_p->g_score = test_g_val;
+                this_neighbour_node_in_hash_p->lineage_data = test_came_from_simplex->p[0]->lineage_data.next_generation();
+                this_neighbour_node_in_hash_p->CameFromSimplex->UnsetChildInfluence(); // unset for previous came-from-simplex
+                this_neighbour_node_in_hash_p->CameFromSimplex = test_came_from_simplex;
+                this_neighbour_node_in_hash_p->CameFromSimplex->SetChildInfluence();
                 if (_dosl_verbose_on(1)) {
-                    _dosl_printf (_YELLOW "Updated: G of child (%x) to %f." YELLOW_, 
-                                                    thisNeighbourNodeInHash_p, thisNeighbourNodeInHash_p->G);
+                    _dosl_printf (_YELLOW "Updated: g_score of child (%x) to %f." YELLOW_, 
+                                                    this_neighbour_node_in_hash_p, this_neighbour_node_in_hash_p->g_score);
                     test_came_from_simplex->print ("New came-from simplex of the child:");
                 }
                 
                 if (isTestingForUnexpanding) { // Previously expanded. Need to backtack since g-score is updated
                     // Unexpand
-                    CheckAndPushNodeIntoHeap (thisNeighbourNodeInHash_p, true, _S_STAR_DOSL_CASCADED_BACKTRACE);
-                    ++(thisNeighbourNodeInHash_p->backTrackVertex);
+                    CheckAndPushNodeIntoHeap (this_neighbour_node_in_hash_p, true, _S_STAR_DOSL_CASCADED_BACKTRACE);
+                    ++(this_neighbour_node_in_hash_p->backTrackVertex);
                     
                     // stop expanding this current vertex if the backtrack has put it back into heap.
-                    if (_S_STAR_DOSL_CASCADED_BACKTRACE  &&  thisNodeInHash_p->nodeHeapPos>=0)
+                    if (_S_STAR_DOSL_CASCADED_BACKTRACE  &&  thisNodeInHash_p->heap_pos>=0)
                         break; // will break the for loop over successors
                     
                     if (_dosl_verbose_on(1)) {
                     _dosl_printf ("Unexpanding started at %x: g-value changed from %f to %f. ", 
-                                    thisNeighbourNodeInHash_p, previous_g_val, thisNeighbourNodeInHash_p->G);
+                                    this_neighbour_node_in_hash_p, previous_g_val, this_neighbour_node_in_hash_p->g_score);
                     }
                     #if _DOSL_EVENTHANDLER
-                    nodeEvent (*thisNeighbourNodeInHash_p, UNEXPANDED);
+                    _this->nodeEvent (*this_neighbour_node_in_hash_p, UNEXPANDED);
                     #endif
                 }
                 else {
-                    // Since thisNeighbourGraphNode->F is changed, re-arrange it in heap
-                    NodeHeap.update (thisNeighbourNodeInHash_p);
+                    // Since thisNeighbourGraphNode->f_score is changed, re-arrange it in heap
+                    node_heap_p->update (this_neighbour_node_in_hash_p);
                     
                     #if _DOSL_EVENTHANDLER
-                    nodeEvent (*thisNeighbourNodeInHash_p, UPDATED);
+                    _this->nodeEvent (*this_neighbour_node_in_hash_p, UPDATED);
                     #endif
                 }
             }
         }
     }
     if (_dosl_verbose_on(0)) 
-        if (ProgressShowInterval>0 && NodeHeap.empty()) {
+        if (progress_show_interval>0 && node_heap_p->empty()) {
             _dosl_printf ("Stopping search!! Heap is empty... Number of states expanded: %d. Heap size: %d. Time elapsed: %f s.", 
-                       ExpandCount, NodeHeap.size(), ((timediff>=0.0) ? timediff : difftime(time(NULL),StartSecond)) );
+                       expand_count, node_heap_p->size(), timer.read());
         }
 }
 
 // -------------------------------------------------------------------------------------
 
-template <class nodeType, class costType>
-void SStar::Algorithm<nodeType,costType>::clear (bool clearHeap, bool resetNodesInHash, unsigned int clearHash)
+template <class AlgDerived, class NodeType, class CostType>
+void SStar::Algorithm<AlgDerived,NodeType,CostType>::clear (unsigned int mode)
 {
     NodeType* thisNodeInHash_p;
-    if (clearHeap) NodeHeap.clear();
-        /* while (!(NodeHeap.empty()))
-            NodeHeap.pop(); */
+    if (mode & CLEAR_NODES_HEAP) node_heap_p->clear();
+        /* while (!(node_heap_p->empty()))
+            node_heap_p->pop(); */
     
-    if (clearHash>0)
-        AllNodesSet.clear ( ((clearHash==1)?false:true) );
+    if (mode & CLEAR_NODES_HASHTABLE)
+        all_nodes_set_p->clear ();
     
-    else if (resetNodesInHash)
-        for (int a=0; a<AllNodesSet.HashTableSize; ++a)
-            for (int b=0; b<AllNodesSet.HashTable[a].size(); ++b) {
-                AllNodesSet.HashTable[a][b]->Expanded = false;
-                AllNodesSet.HashTable[a][b]->G = std::numeric_limits<CostType>::infinity();
-                AllNodesSet.HashTable[a][b]->PostHashInsertInitiated = false;
-        }
+    else if (mode & CLEAR_NODE_DATA)
+        for (auto fit=all_nodes_set_p->begin(); fit != all_nodes_set_p->end(); ++fit) 
+            fit->clear_search_data (mode);
+    
+    /*else if (resetNodesInHash)
+        for (int a=0; a<all_nodes_set_p->hash_table_size; ++a)
+            for (int b=0; b<all_nodes_set_p->HashTable[a].size(); ++b) {
+                all_nodes_set_p->HashTable[a][b]->expanded = false;
+                all_nodes_set_p->HashTable[a][b]->g_score = std::numeric_limits<CostType>::infinity();
+                all_nodes_set_p->HashTable[a][b]->post_hash_insert_initiated = false;
+        }*/
 }
 
 // -------------------------------------------------------------------------------------
@@ -667,28 +738,28 @@ void SStar::Algorithm<nodeType,costType>::clear (bool clearHeap, bool resetNodes
 
 int DOUBLE_TO_INT_FACTOR = 1000000;
 
-/* template <class nodeType, class DoubleType, bool convertWeightToInt=true>
-nodeType computeWeightedSum (std::unordered_map <nodeType*, DoubleType> node_weight);
+/* template <class NodeType, class DoubleType, bool convertWeightToInt=true>
+NodeType computeWeightedSum (std::unordered_map <NodeType*, DoubleType> node_weight);
 
-template <class nodeType, class DoubleType>
-nodeType computeWeightedSum<nodeType,DoubleType,true> (std::unordered_map <nodeType*, DoubleType> node_weight) { }
+template <class NodeType, class DoubleType>
+NodeType computeWeightedSum<NodeType,DoubleType,true> (std::unordered_map <NodeType*, DoubleType> node_weight) { }
 
-template <class nodeType, class DoubleType>
-nodeType computeWeightedSum<nodeType,DoubleType,false> (std::unordered_map <nodeType*, DoubleType> node_weight) { } */
+template <class NodeType, class DoubleType>
+NodeType computeWeightedSum<NodeType,DoubleType,false> (std::unordered_map <NodeType*, DoubleType> node_weight) { } */
 
 // -----
 
-template <class nodeType, class costType>
-    std::vector < std::unordered_map <nodeType*, costType> > // node-weight pairs
-        SStar::Algorithm<nodeType,costType>::reconstructPath (nodeType n) // n should be a node that is in the S-star hash
+template <class AlgDerived, class NodeType, class CostType>
+    std::vector < std::unordered_map <NodeType*, CostType> > // node-weight pairs
+        SStar::Algorithm<AlgDerived,NodeType,CostType>::reconstruct_weighted_pointer_path (NodeType n) // n should be a node that is in the S-star hash
 {
     _dosl_verbose_head(1);
     
     // create a 0-simplex out of np
-    NodeType* np = AllNodesSet.get(n);
+    NodeType* np = all_nodes_set_p->get(n);
     
-    std::unordered_map <nodeType*, DoubleType>  thisPt;
-    std::vector < std::unordered_map <nodeType*, DoubleType> >  ret;
+    std::unordered_map <NodeType*, DoubleType>  thisPt;
+    std::vector < std::unordered_map <NodeType*, DoubleType> >  ret;
     
     // isert the first point
     thisPt.insert (std::make_pair(np, 1.0));
@@ -697,7 +768,7 @@ template <class nodeType, class costType>
     // next point
     typename MetricSimplexContainerType::PathPointType  path_pt =
             typename MetricSimplexContainerType::PathPointType 
-                        (np->CameFromSimplex->w, np->CameFromSimplex->G_cameFromPoint, thisPt);
+                        (np->CameFromSimplex->w, np->CameFromSimplex->g_came_from_point, thisPt);
     
     if (_dosl_verbose_on(0))  n.print("Reconstruct path called");
     if (_dosl_verbose_on(1))  _dosl_printf("Node in hash: %x.", np);
@@ -706,19 +777,19 @@ template <class nodeType, class costType>
             path_pt.print("path point: ");
         }
         ret.push_back (path_pt.p);
-        path_pt = AllSimplices.findCamefromPoint (path_pt);
+        path_pt = AllSimplices.find_camefrom_point (path_pt);
     }
     
     return (ret);
 }
 
-template <class nodeType, class costType>
-    std::vector<nodeType*>  // convex combined using overloaded operators + and * of 'nodeType'
-        SStar::Algorithm<nodeType,costType>::reconstructPointerPath (nodeType n, bool convertWeightsToInt)
+template <class AlgDerived, class NodeType, class CostType>
+    std::vector<NodeType*>  // convex combined using overloaded operators + and * of 'NodeType'
+        SStar::Algorithm<AlgDerived,NodeType,CostType>::reconstruct_pointer_path (NodeType n, bool convertWeightsToInt)
 {
-    std::vector < std::unordered_map <nodeType*, DoubleType> >  path = reconstructPath (n);
-    std::vector<nodeType*>  ret;
-    nodeType tn;
+    std::vector < std::unordered_map <NodeType*, DoubleType> >  path = reconstruct_weighted_pointer_path (n);
+    std::vector<NodeType*>  ret;
+    NodeType tn;
     
     // weighted combination
     for (a=0; a<path.size(); ++a) {
@@ -742,7 +813,7 @@ template <class nodeType, class costType>
         
         if (convertWeightsToInt)
             tn = tn * (1.0/DOUBLE_TO_INT_FACTOR);
-        ret.push_back (AllNodesSet.get(tn));
+        ret.push_back (all_nodes_set_p->get(tn));
     }
     
     return (ret);

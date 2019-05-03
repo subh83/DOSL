@@ -102,14 +102,14 @@ public:
     // print
     void print (std::string head="", std::string tail="\n") const {
         /*_dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ " x=" << x << ", y=" << y << "; ";
-        (this->G == std::numeric_limits<double>::max())? printf("INF") : printf("G = %0.8f; h = [", this->G);
+        (this->g_score == std::numeric_limits<double>::max())? printf("INF") : printf("g_score = %0.8f; h = [", this->g_score);
         for (int a=0; a<h.size(); ++a){
             printf("%d", a);
             if (a!=h.size()-1) printf(", ");
         } 
         printf("]\n");
-        _dosl_cout << "Successors: ";
-        for (auto it=this->Successors.begin(); it!=this->Successors.end(); ++it)
+        _dosl_cout << "successors: ";
+        for (auto it=this->successors.begin(); it!=this->successors.end(); ++it)
             printf ("%x (%f), ", it->first, it->second);
         std::cout << tail << _dosl_endl;*/
     }
@@ -120,7 +120,7 @@ public:
 enum H_CLASS_TYPE { HOMOLOGY_CLASS, HOMOTOPY_CLASS };
 
 template <class doslAlgorithm, int HClassType=HOMOTOPY_CLASS>
-class cvMulticlassPathPlanner : public doslAlgorithm::template Algorithm< cvMPPnode<doslAlgorithm>, double>
+class cvMulticlassPathPlanner : public doslAlgorithm::template Algorithm< cvMulticlassPathPlanner<doslAlgorithm,HClassType>, cvMPPnode<doslAlgorithm>, double>
 {
 public:
     typedef cvMPPnode<doslAlgorithm> cvMPPnode_;
@@ -194,7 +194,7 @@ public:
         
         for (int i=0; i<homotopyGoals.size(); ++i) {
             // get path
-            auto path = this->reconstructPath (homotopyGoals[i]);
+            auto path = this->reconstruct_weighted_pointer_path (homotopyGoals[i]);
             double cost = 0.0;
             CvScalar colr = cvScalar (50.0 + rand()%150, 50.0 + rand()%150, 50.0 + rand()%150);
             
@@ -249,7 +249,7 @@ public:
                     _dosl_info("SStar Algorithm: Setting GRAPH_TYPE=SQUARE_TRIANGULATION (SStar do not support FOUR_CONNECTED graphs).");
                 GRAPH_TYPE = SQUARE_TRIANGULATION;
                             /* TODO: path reconstruction does not work with EIGHT_CONNECTED because of degenerate 3-simplices being rejected
-                                     in computation of 'getAllAttachedMaximalSimplices' (during path reconstruction only?).
+                                     in computation of 'get_all_attached_maximal_simplices' (during path reconstruction only?).
                                      Need to fix this by allowing faces of the degenerate simplex to be returned instead.
                                      TODO: Create function 'getAllAttachedNondegenerateMaximalSimplices'. */
              }
@@ -282,7 +282,7 @@ public:
         //visualize = vis;
         
         // Set planner variables
-        this->AllNodesSet.HashTableSize = ceil(WIDTH + 1);
+        this->all_nodes_set_p->reserve (ceil(WIDTH + 1));
         
         // compute path
         // find_paths();
@@ -487,12 +487,12 @@ public:
                 cvPlotPoint (cv_plot_coord(n.x,n.y), col, PLOT_SCALE);
         }
         
-        if (this->ExpandCount % VIS_INTERVAL == 0  ||  this->NodeHeap.size() == 0) {
+        if (this->expand_count % VIS_INTERVAL == 0  ||  this->node_heap_p->size() == 0) {
             cv::imshow("Display window", image_to_display);
             std::cout << std::flush;
-            /* if (SAVE_IMG_INTERVAL>0 && ExpandCount%SAVE_IMG_INTERVAL == 0) {
+            /* if (SAVE_IMG_INTERVAL>0 && expand_count%SAVE_IMG_INTERVAL == 0) {
                 char imgFname[1024];
-                sprintf(imgFname, "%s%s%05d.png", out_folderName.c_str(), imgPrefix.str().c_str(), ExpandCount);
+                sprintf(imgFname, "%s%s%05d.png", out_folderName.c_str(), imgPrefix.str().c_str(), expand_count);
                 cv::imwrite(imgFname, image_to_display);
             } */
             cvWaitKey(1); //(10);
