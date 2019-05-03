@@ -37,8 +37,8 @@
 #define getPointerPathToNode    reconstructPointerPath
 
 // v3.2x -> 3.3
-//#define AllNodesSet             all_nodes_set_p.operator*()
-//#define NodeHeap                node_heap_p.operator*()
+#define AllNodesSet             all_nodes_set_p.operator*()
+#define NodeHeap                node_heap_p.operator*()
 // renames
 #define set_hash_table_size              reserve
 #define G                                g_score
