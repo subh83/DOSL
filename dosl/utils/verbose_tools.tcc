@@ -31,9 +31,10 @@
 
 // Tab Printing
 
-int _DOSL_VERBOSE_FUN_DEPTH = 0;
 
-int DOSL_RUNTIME_VERBOSE_SWITCH = 1;
+static int _DOSL_VERBOSE_FUN_DEPTH = 0;
+static int DOSL_RUNTIME_VERBOSE_SWITCH = 1;
+static bool _dosl_is_tab_printed = false;
 
 
 constexpr int _is_func_in_list (char const * needle, char const * haystack=_DOSL_VERBOSE_ITEMS,
@@ -126,7 +127,8 @@ public:
 
 // ---------------------------
 
-std::string get_indentation_string (int relTabs = 0) {
+template <class IntType>
+std::string get_indentation_string (IntType relTabs = 0) {
     int nTabs = _DOSL_VERBOSE_FUN_DEPTH + relTabs;
     std::string tabStr = "";
     for (int a=0; a<nTabs; ++a)
@@ -134,7 +136,8 @@ std::string get_indentation_string (int relTabs = 0) {
     return (tabStr);
 }
 
-void print_indentation (int relTabs = 0) {
+template <class IntType>
+void print_indentation (IntType relTabs = 0) {
     std::cout << get_indentation_string(relTabs);
 }
 
@@ -143,12 +146,10 @@ void decrease_indentation (void) { if (GLOBAL_INDENTATION>0) --GLOBAL_INDENTATIO
 #define _INDENT     increase_indentation(); // print_indentation();
 #define INDENT_     decrease_indentation(); */
 
-#define DOSL_INDENT    print_indentation();
-#define DOSL_NEWLINE   printf("\n"); print_indentation();
+#define DOSL_INDENT    print_indentation(0);
+#define DOSL_NEWLINE   printf("\n"); print_indentation(0);
 
 // --
-
-bool _dosl_is_tab_printed = false;
 
 #ifndef _dosl_printf
 #define _dosl_printf(...) { if(!_dosl_is_tab_printed) DOSL_INDENT; \
@@ -190,10 +191,21 @@ TAB_TRACKED_OSTREAM _dosl_cout (std::cout); */
 #endif
 
 #ifndef _dosl_newl
-#define _dosl_newl  std::endl << get_indentation_string()
+#define _dosl_newl  std::endl << get_indentation_string(0)
 #endif
 
 // ====================================================
+
+template <class U>
+std::string _uint_to_binary (U _x) {
+    unsigned int x = (unsigned int) _x;
+    std::string  binStr="";
+    for (unsigned int z=1; z<=x; z<<=1)
+        binStr = (((x & z)==0)?"0":"1") + binStr;
+    return binStr;
+}
+
+#define uint_to_binary(x) (_uint_to_binary(x).c_str())
 
 #endif
 

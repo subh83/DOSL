@@ -736,7 +736,7 @@ void SStar::Algorithm<AlgDerived,NodeType,CostType>::clear (unsigned int mode)
 // -------------------------------------------------------------------------------------
 // path reconstruction
 
-int DOUBLE_TO_INT_FACTOR = 1000000;
+#define DOUBLE_TO_INT_FACTOR 1000000
 
 /* template <class NodeType, class DoubleType, bool convertWeightToInt=true>
 NodeType computeWeightedSum (std::unordered_map <NodeType*, DoubleType> node_weight);

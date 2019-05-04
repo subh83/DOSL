@@ -70,7 +70,7 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
 - Ability to write new planners with ease. Comes with a weighted A-star (that includes Dijkstra's and normal A-star), Theta-star and S-star planner by default.
 
 ### New:
-* **A major change since v3.3x:** The `[AlgName]::Algorithm` class template now takes in the derived class as its first template parameter (a CRTP). Thus, definition of a `searchProblem` class should now be made as follows:
+* **An important user-end change since v3.3:** The `[AlgName]::Algorithm` class template now takes in the derived class as its first template parameter (a CRTP). Thus, definition of a `searchProblem` class should now be made as follows:
 ```C++
     class searchProblem : public AStar::Algorithm <searchProblem, myNode, double>
     { /* ... */};                                  // ^^^^ new template parameter
@@ -335,6 +335,8 @@ Bibtex entry:
 
 Version history:
 ---------------
+
+* May 2019: version 3.31: 'multiple definition' bug fix.
 
 * May 2019: version 3.3 released: virtual functions replaced by CRTP in `[AlgName]::Algorithm` classes, thus making some programs twice as fast; replaced node and simplex containers/heaps with pointers, making way for multi-thread programming in future; renaming of some variables and functions (back compatibility included); bug fixes.
 

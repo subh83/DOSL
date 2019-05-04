@@ -109,11 +109,19 @@
 
 #if _DOSL_DEBUG
     #ifndef _dosl_warn_once
-        #include <unordered_map>
+        /*#include <unordered_map>
         #include <string>
         std::unordered_map <std::string, int> _dosl_warn_counts;
         #define _dosl_warn_once(warn_name,...) { \
             if (_dosl_warn_counts[warn_name]==0) { _dosl_warn(__VA_ARGS__); _dosl_warn_counts[warn_name] = 1; } \
+        }
+        #define _dosl_default_fun_warn(fun_name) { \
+            _dosl_warn_once(fun_name, "Member '" \
+            fun_name "' has not been overwritten. Using default member (this will most likely produce undesirable results)!"); \
+        }*/
+        #define _dosl_warn_once(warn_name,...) { \
+            static std::unordered_map <std::string, int> _dosl_warn_counts; \
+            if (_dosl_warn_counts[warn_name] == 0) { _dosl_warn(__VA_ARGS__); _dosl_warn_counts[warn_name] = 1; } \
         }
         #define _dosl_default_fun_warn(fun_name) { \
             _dosl_warn_once(fun_name, "Member '" \
@@ -162,15 +170,6 @@ public:
 #endif
 
 #define TO_BOOL(v) ((v)!=0)
-
-std::string _uint_to_binary (unsigned int x) {
-    std::string  binStr="";
-    for (unsigned int z=1; z<=x; z<<=1)
-        binStr = (((x & z)==0)?"0":"1") + binStr;
-    return binStr;
-}
-
-#define uint_to_binary(x) (_uint_to_binary(x).c_str())
 
 // =================================================
 // ---------------------------
