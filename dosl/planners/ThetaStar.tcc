@@ -102,23 +102,11 @@ public:
         // constructors
         Node() : post_hash_insert_initiated(false), 
                       expanded(false), successors_created(false), came_from(NULL), lineage_data(LineageDataType()) { }
-        
-        void clear_search_data (unsigned int mode = CLEAR_NODE_SUCCESSORS)  { // reset everything other than successor list
-            post_hash_insert_initiated = false; expanded = false; came_from = NULL;
-            heap_pos = -1; g_score = (CostType)0.0; f_score = (CostType)0.0;
-            if (mode & CLEAR_NODE_SUCCESSORS) { successors.clear(); successors_created = false; }
-            if (mode & CLEAR_NODE_LINEAGE) lineage_data = LineageDataType();
-        }
-        
-        // TODO: Copy constructor to prevent copying these members
-        
-        // Define virtual functions of derived class
-        inline CostType HeapKey() { return (f_score); }
+        // pseudo-destructor
+        void clear_search_data (unsigned int mode = CLEAR_NODE_SUCCESSORS);
         
         // ----------------------------------------------------------------------
         // Functions to be overwritten by user node type
-        //      (need not be virtual since use is of only derived class members).
-        // Need to have virtual members with same name in the problem class.
         inline int getHashBin (void) { return (0); }
         bool operator==(const NodeType& n)
             { _dosl_default_fun_warn("'ThetaStar::Node::operator==' OR 'ThetaStar::Algorithm::equalTo'"); }
@@ -203,28 +191,7 @@ public:
         std::shared_ptr<NodeHeapType>  node_heap_p;
         
         // Constructors and initiators
-        Algorithm (AlgDerived* shared_instance_p = NULL) : _this (static_cast<AlgDerived*>(this))
-        {
-            // Copy pointers to containers
-            if (shared_instance_p)
-                all_nodes_set_p = shared_instance_p->all_nodes_set_p;
-            else {
-                node_hasher_instance = NodeHasherFunc (_this);
-                node_equal_to_instance = NodeEqualToFunc (_this);
-                all_nodes_set_p = std::shared_ptr<NodesSetType>(new NodesSetType(4096, node_hasher_instance, node_equal_to_instance) );
-            }
-            
-            if (shared_instance_p)
-                node_heap_p = shared_instance_p->node_heap_p;
-            else {
-                node_key_less_than_instance = NodeKeyLessThanFunc (_this);
-                node_heap_p = std::shared_ptr<NodeHeapType>(new NodeHeapType(node_key_less_than_instance) );
-            }
-            
-            // default parameters
-            subopt_eps = 1.0;
-            progress_show_interval = 10000;
-        }
+        Algorithm (AlgDerived* shared_instance_p = NULL);
         
         // =====================================================
         // Main search functions
@@ -282,6 +249,32 @@ public:
 };
 
 // =====================================================================================
+
+template <class AlgDerived, class NodeType, class CostType>
+ThetaStar::Algorithm<AlgDerived,NodeType,CostType>::Algorithm (AlgDerived* shared_instance_p) : _this (static_cast<AlgDerived*>(this))
+{
+    // Copy pointers to containers
+    if (shared_instance_p)
+        all_nodes_set_p = shared_instance_p->all_nodes_set_p;
+    else {
+        node_hasher_instance = NodeHasherFunc (_this);
+        node_equal_to_instance = NodeEqualToFunc (_this);
+        all_nodes_set_p = std::shared_ptr<NodesSetType>(new NodesSetType(4096, node_hasher_instance, node_equal_to_instance) );
+    }
+    
+    if (shared_instance_p)
+        node_heap_p = shared_instance_p->node_heap_p;
+    else {
+        node_key_less_than_instance = NodeKeyLessThanFunc (_this);
+        node_heap_p = std::shared_ptr<NodeHeapType>(new NodeHeapType(node_key_less_than_instance) );
+    }
+    
+    // default parameters
+    subopt_eps = 1.0;
+    progress_show_interval = 10000;
+}
+
+// -------------------------------------------------------------------------------------
 
 template <class AlgDerived, class NodeType, class CostType>
 void ThetaStar::Algorithm<AlgDerived,NodeType,CostType>::generate_successors (NodeType* node_in_hash_p)
@@ -488,6 +481,17 @@ void ThetaStar::Algorithm<AlgDerived,NodeType,CostType>::search (void)
                        expand_count, node_heap_p->size(), timer.read());
         }
     }
+}
+
+// -------------------------------------------------------------------------------------
+
+template <class NodeType, class CostType>
+void ThetaStar::Node<NodeType,CostType>::clear_search_data (unsigned int mode)  {
+            // reset everything other than successor list. TODO: do this in copy constructor and operator== instead
+    post_hash_insert_initiated = false; expanded = false; came_from = NULL;
+    heap_pos = -1; g_score = (CostType)0.0; f_score = (CostType)0.0;
+    if (mode & CLEAR_NODE_SUCCESSORS) { successors.clear(); successors_created = false; }
+    if (mode & CLEAR_NODE_LINEAGE) lineage_data = LineageDataType();
 }
 
 // -------------------------------------------------------------------------------------

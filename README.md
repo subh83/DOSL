@@ -162,7 +162,7 @@ public:
 // ==============================================================================
 /* The following class contains the description of the graph (graph connectivity)
        and search problem description (start and stop criteria).
-       Needs to be derived from DOSL-provided class template 'AStar::Algorithm<node_type,cost_type>' */
+       Needs to be derived from DOSL-provided class template 'AStar::Algorithm<search_problem_class,node_type,cost_type>' */
 
 class searchProblem : public AStar::Algorithm<searchProblem,myNode,double>
 {

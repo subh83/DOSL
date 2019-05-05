@@ -121,24 +121,13 @@ public:
         // constructors
         Node() : post_hash_insert_initiated(false),
                       backTrackVertex(0), successors_created(false), CameFromSimplex(NULL), lineage_data(LineageDataType()) { }
-        
         // TODO: Copy constructor to prevent copying these members
         
-        void clear_search_data (unsigned int mode = CLEAR_NODE_SUCCESSORS) { // reset everything other than successor list
-            post_hash_insert_initiated = false; expanded = false; //came_from = NULL;
-            heap_pos = -1; g_score = (CostType)0.0; //f_score = (CostType)0.0;
-            if (mode & CLEAR_NODE_SUCCESSORS) { successors.clear(); successors_created = false; }
-            if (mode & CLEAR_NODE_LINEAGE) lineage_data = LineageDataType();
-            backTrackVertex = 0; CameFromSimplex = NULL;
-        }
-        
-        // Define virtual functions of derived class
-        inline CostType HeapKey() { return (g_score+getHeuristics()); }
+        // pseudo-destructor
+        void clear_search_data (unsigned int mode = CLEAR_NODE_SUCCESSORS);
         
         // ----------------------------------------------------------------------
         // Functions to be overwritten by user node type
-        //      (need not be virtual since use is of only derived class members).
-        // Need to have virtual members with same name in the problem class.
         inline int getHashBin (void) { return (0); }
         bool operator==(const NodeType& n)
             { _dosl_default_fun_warn("'SStar::Node::operator==' OR 'SStar::Algorithm::equalTo'"); }
@@ -248,28 +237,7 @@ public:
         // =====================================================
         // ---------------------------
         // Constructors and initiators
-        Algorithm (AlgDerived* shared_instance_p = NULL) : _this (static_cast<AlgDerived*>(this))
-        { 
-            // Copy pointers to containers
-            if (shared_instance_p)
-                all_nodes_set_p = shared_instance_p->all_nodes_set_p;
-            else {
-                node_hasher_instance = NodeHasherFunc (_this);
-                node_equal_to_instance = NodeEqualToFunc (_this);
-                all_nodes_set_p = std::shared_ptr<NodesSetType>(new NodesSetType(4096, node_hasher_instance, node_equal_to_instance) );
-            }
-            
-            if (shared_instance_p)
-                node_heap_p = shared_instance_p->node_heap_p;
-            else {
-                node_key_less_than_instance = NodeKeyLessThanFunc (_this);
-                node_heap_p = std::shared_ptr<NodeHeapType>(new NodeHeapType(node_key_less_than_instance) );
-            }
-            
-            // default parameters
-            subopt_eps = 1.0;
-            progress_show_interval = 10000;
-        }
+        Algorithm (AlgDerived* shared_instance_p = NULL);
         
         // Main search functions
         void search (void);
@@ -326,6 +294,30 @@ public:
 };
 
 // =====================================================================================
+
+template <class AlgDerived, class NodeType, class CostType>
+SStar::Algorithm<AlgDerived,NodeType,CostType>::Algorithm (AlgDerived* shared_instance_p) : _this (static_cast<AlgDerived*>(this))
+{ 
+    // Copy pointers to containers
+    if (shared_instance_p)
+        all_nodes_set_p = shared_instance_p->all_nodes_set_p;
+    else {
+        node_hasher_instance = NodeHasherFunc (_this);
+        node_equal_to_instance = NodeEqualToFunc (_this);
+        all_nodes_set_p = std::shared_ptr<NodesSetType>(new NodesSetType(4096, node_hasher_instance, node_equal_to_instance) );
+    }
+    
+    if (shared_instance_p)
+        node_heap_p = shared_instance_p->node_heap_p;
+    else {
+        node_key_less_than_instance = NodeKeyLessThanFunc (_this);
+        node_heap_p = std::shared_ptr<NodeHeapType>(new NodeHeapType(node_key_less_than_instance) );
+    }
+    
+    // default parameters
+    subopt_eps = 1.0;
+    progress_show_interval = 10000;
+}
 
 // Basic member functions (not for end-user use)
 
@@ -705,6 +697,17 @@ void SStar::Algorithm<AlgDerived,NodeType,CostType>::search (void)
             _dosl_printf ("Stopping search!! Heap is empty... Number of states expanded: %d. Heap size: %d. Time elapsed: %f s.", 
                        expand_count, node_heap_p->size(), timer.read());
         }
+}
+
+// -------------------------------------------------------------------------------------
+
+template <class NodeType, class CostType>
+void SStar::Node<NodeType,CostType>::clear_search_data (unsigned int mode) { // reset everything other than successor list
+    post_hash_insert_initiated = false; expanded = false; //came_from = NULL;
+    heap_pos = -1; g_score = (CostType)0.0; //f_score = (CostType)0.0;
+    if (mode & CLEAR_NODE_SUCCESSORS) { successors.clear(); successors_created = false; }
+    if (mode & CLEAR_NODE_LINEAGE) lineage_data = LineageDataType();
+    backTrackVertex = 0; CameFromSimplex = NULL;
 }
 
 // -------------------------------------------------------------------------------------
