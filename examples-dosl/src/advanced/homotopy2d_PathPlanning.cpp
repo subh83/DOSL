@@ -69,7 +69,7 @@
 #define _VIS 1
 #define VIS_INTERVAL 100
 #define VERTEX_COLORS 1
-#define SAVE_IMG_INTERVAL -1 // 0 to not save at all. -1 to save last frame only.
+#define SAVE_IMG_INTERVAL 10000 // 0 to not save at all. -1 to save last frame only.
 
 // ---------------------------------------------------
 
@@ -241,7 +241,7 @@ public:
         
         // saving options
         frameno = 0;
-        imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "homotopy2d_";
+        imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "_homotopy2d_PathPlanning_";
         
         #if _VIS
         image_to_display = my_map.getCvMat (COLOR_MAP);

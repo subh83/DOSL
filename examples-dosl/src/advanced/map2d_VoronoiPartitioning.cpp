@@ -215,7 +215,7 @@ public:
         
         // saving options
         frameno = 0;
-        imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "map2d_";
+        imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "_map2d_VoronoiPartitioning_";
         
         #if _VIS
         image_to_display = my_map.getCvMat (COLOR_MAP);
@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
     #if _VIS
     if (SAVE_IMG_INTERVAL != 0) {
         char imgFname[1024];
-        sprintf(imgFname, "%s%s_path.png", test_search_problem.out_folderName.c_str(), 
+        sprintf(imgFname, "%s%s_partitions.png", test_search_problem.out_folderName.c_str(), 
                                                 test_search_problem.imgPrefix.str().c_str());
         cv::imwrite(imgFname, test_search_problem.image_to_display);
     }

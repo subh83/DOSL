@@ -211,7 +211,7 @@ public:
         
         // saving options
         frameno = 0;
-        imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "map2d_";
+        imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "_map2d_PathPlanning_";
         
         #if _VIS
         image_to_display = my_map.getCvMat (COLOR_MAP);

@@ -51,6 +51,44 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
  </tr>
 </table></p>
 
+----
+
+Output from example program `map2d_VoronoiPartitioning` using S* search algorithm showing the progress in finding Voronoi partitioning of an environment with 4 start vertices (requires OpenCV):
+
+<p align="center"><table border=0 width=100% style="border-bottom:solid 2px #ccc">
+ <tr>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar8_map2d_VoronoiPartitioning_10000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar8_map2d_VoronoiPartitioning_20000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar8_map2d_VoronoiPartitioning_40000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar8_map2d_VoronoiPartitioning__partitions.png" width="180"/></td>
+ </tr>
+ <tr>
+  <td align="center">10000 vertices expanded</td>
+  <td align="center">20000 vertices expanded</td>
+  <td align="center">40000 vertices expanded</td>
+  <td align="center">Final partitioning</td>
+ </tr>
+</table></p>
+
+----
+
+Output from example program `homotopy2d_PathPlanning` using S* search algorithm showing the progress in finding shortest paths in two different homotopy classes (requires OpenCV):
+
+<p align="center"><table border=0 width=100%>
+ <tr>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar6_homotopy2d_PathPlanning_10000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar6_homotopy2d_PathPlanning_30000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar6_homotopy2d_PathPlanning_70000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar6_homotopy2d_PathPlanning__path.png" width="180"/></td>
+ </tr>
+ <tr>
+  <td align="center">10000 vertices expanded</td>
+  <td align="center">20000 vertices expanded</td>
+  <td align="center">40000 vertices expanded</td>
+  <td align="center">Final partitioning</td>
+ </tr>
+</table></p>
+
 *******************************************************************************
 
 ### DOSL is designed to be:
@@ -249,7 +287,7 @@ For common types of graph, encaptulations can be used to hide some of the detail
 
 __Single shortest path planning in an OpenCV image:__
 
-Include `dosl/encapsulations/cvPathPlanner.tcc` in your code. Then you can compute the optimal path from a `start` pixel to a `goal` pixel in a OpenCV image `obs_map` by creating a variable of type `cvPathPlanner` using the constructor
+Include `dosl/encapsulations/cvPathPlanner.tcc` in your code. Then you can compute the optimal path from a `start` pixel to a `goal` pixel in a OpenCV image `obs_map` by creating a variable of type `cvPathPlanner<[AlgName]>` (where `[AlgName]` is the name of the search algorithm) using the constructor
 ```C++
 cvPathPlanner::cvPathPlanner (cv::Mat obs_map, ...);
 ```
@@ -267,7 +305,7 @@ See the example in `examples-dosl/src/simple/map2d_encapsulated_PathPlanning.cpp
 
 __Multiple shortest paths in different topological classes in an OpenCV image:__
 
-Include `dosl/encapsulations/cvMulticlassPathPlanner.tcc` in your code. Then create an instance of `cvMulticlassPathPlanner` using the constructor
+Include `dosl/encapsulations/cvMulticlassPathPlanner.tcc` in your code. Then create an instance of `cvMulticlassPathPlanner<[AlgName]>` (where `[AlgName]` is the name of the search algorithm) using the constructor
 ```C++
 cvMulticlassPathPlanner::cvMulticlassPathPlanner (cv::Mat obs_map, ...)
 ```
