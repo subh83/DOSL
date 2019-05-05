@@ -83,8 +83,8 @@ Output from example program `homotopy2d_PathPlanning` using S* search algorithm 
  </tr>
  <tr>
   <td align="center">10000 vertices expanded</td>
-  <td align="center">20000 vertices expanded</td>
-  <td align="center">40000 vertices expanded</td>
+  <td align="center">30000 vertices expanded</td>
+  <td align="center">70000 vertices expanded</td>
   <td align="center">Final paths</td>
  </tr>
 </table></p>
