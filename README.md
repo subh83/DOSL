@@ -72,7 +72,7 @@ Output from example program `map2d_VoronoiPartitioning` using S* search algorith
 
 ----
 
-Output from example program `homotopy2d_PathPlanning` using S* search algorithm showing the progress in finding shortest paths in two different homotopy classes (requires OpenCV):
+Output from example program `homotopy2d_PathPlanning` using S* search algorithm showing the progress in finding shortest paths in two different homotopy classes by searching in the universal covering space of the environment (requires OpenCV):
 
 <p align="center"><table border=0 width=100%>
  <tr>
@@ -85,7 +85,7 @@ Output from example program `homotopy2d_PathPlanning` using S* search algorithm 
   <td align="center">10000 vertices expanded</td>
   <td align="center">20000 vertices expanded</td>
   <td align="center">40000 vertices expanded</td>
-  <td align="center">Final partitioning</td>
+  <td align="center">Final paths</td>
  </tr>
 </table></p>
 
