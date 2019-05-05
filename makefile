@@ -25,6 +25,17 @@ uninstall:
 	rm -rf $(DOSL_FOLDER)/dosl
 
 # --------------------------------------------
+# Make and run all example programs
+
+.PHONY: all
+all:
+	cd examples-dosl && make all
+
+.PHONY: run
+run:
+	cd examples-dosl && make run
+
+# --------------------------------------------
 # Examples
 
 .PHONY: examples
@@ -50,8 +61,4 @@ examples-run:
 .PHONY: examples-clean
 examples-clean:
 	cd examples-dosl && make clean
-
-.PHONY: run-examples
-run-examples:
-	cd examples-dosl && make run
 

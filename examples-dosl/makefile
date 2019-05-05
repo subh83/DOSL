@@ -13,13 +13,15 @@ SHELL := /bin/bash
 
 ifneq ("$(wildcard /usr/local/include/dosl)","")
     DOSL_FOLDER = /usr/local/include
+    INC_DOSL = -I$(DOSL_FOLDER)
 else ifneq ("$(wildcard ../dosl)","")
     DOSL_FOLDER = ..
+    INC_DOSL = -I../$(DOSL_FOLDER) # relative to the cpp sources
 else
 	DOSL_FOLDER = $(PREFIX)/include
+	INC_DOSL = -I$(DOSL_FOLDER)
 endif
 
-INC_DOSL = -I../$(DOSL_FOLDER) # relative to the cpp sources
 INC_LOCAL = -I. -I..
 
 # --------------------------------------------
