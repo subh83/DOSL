@@ -55,7 +55,7 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
 
 Output from example program `map2d_VoronoiPartitioning` using S* search algorithm showing the progress in finding Voronoi partitioning of an environment with 4 start vertices (requires OpenCV):
 
-<p align="center"><table border=0 width=100% style="border-bottom:solid 2px #ccc">
+<p align="center"><table border=0 width=100%>
  <tr>
   <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar8_map2d_VoronoiPartitioning_10000.png" width="180"/></td>
   <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar8_map2d_VoronoiPartitioning_20000.png" width="180"/></td>
