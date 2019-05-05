@@ -177,7 +177,7 @@ public:
            graph structure and search parameters. */
     
     /* Prototype for 'AStar::Algorithm<>::getSuccessors':
-           virtual void getSuccessors 
+           void getSuccessors 
                (NodeType& n, std::vector<NodeType>* const s, std::vector<CostType>* const s);
        Description: Takes in a vertex, n, and returns its neighbors/successors, s, 
                     and the costs/distances of the edges, c. This defines graph connectivity. */
@@ -198,8 +198,8 @@ public:
     }
     
     /* Prototype for 'AStar::Algorithm<>::getStartNodes':
-           virtual std::vector<NodeType> getStartNodes (void);
-       Returns the list of vertices(s) to start the search with. */
+           std::vector<NodeType> getStartNodes (void);
+       Description: Should return the list of vertices(s) to start the search with. */
     
     std::vector<myNode> getStartNodes (void) {
         std::vector<myNode> startNodes;
@@ -211,10 +211,9 @@ public:
     }
     
     /* Prototype for 'AStar::Algorithm<>::stopSearch':
-           virtual bool stopSearch (NodeType& n);
+           bool stopSearch (NodeType& n);
        Description: Determines whether to stop the search when 'n' is being expanded.
-       Optional -- If not provided, search will terminate only when heap is empty 
-                   (i.e., all nodes in graph have been expanded). */
+       Optional -- If not provided, search will terminate only when heap is empty. */
     
     bool stopSearch (myNode &n) {
         return (n==goal_node);
