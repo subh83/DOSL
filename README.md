@@ -51,43 +51,8 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
  </tr>
 </table></p>
 
-----
 
-Output from example program `map2d_VoronoiPartitioning` using S* search algorithm showing the progress in finding Voronoi partitioning of an environment with 4 start vertices (requires OpenCV):
-
-<p align="center"><table border=0 width=100%>
- <tr>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar8_map2d_VoronoiPartitioning_10000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar8_map2d_VoronoiPartitioning_20000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar8_map2d_VoronoiPartitioning_40000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar8_map2d_VoronoiPartitioning__partitions.png" width="180"/></td>
- </tr>
- <tr>
-  <td align="center">10000 vertices expanded</td>
-  <td align="center">20000 vertices expanded</td>
-  <td align="center">40000 vertices expanded</td>
-  <td align="center">Final partitioning</td>
- </tr>
-</table></p>
-
-----
-
-Output from example program `homotopy2d_PathPlanning` using S* search algorithm showing the progress in finding shortest paths in two different homotopy classes by searching in the universal covering space of the environment (requires OpenCV):
-
-<p align="center"><table border=0 width=100%>
- <tr>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar6_homotopy2d_PathPlanning_10000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar6_homotopy2d_PathPlanning_30000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar6_homotopy2d_PathPlanning_70000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/SStar6_homotopy2d_PathPlanning__path.png" width="180"/></td>
- </tr>
- <tr>
-  <td align="center">10000 vertices expanded</td>
-  <td align="center">30000 vertices expanded</td>
-  <td align="center">70000 vertices expanded</td>
-  <td align="center">Final paths</td>
- </tr>
-</table></p>
+See the [Overview of Selected Example Programs](https://github.com/subh83/DOSL/wiki/Overview-of-Selected-Example-Programs) for more sample outputs from the provided example programs.
 
 *******************************************************************************
 
