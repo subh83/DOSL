@@ -73,13 +73,12 @@ See the [Overview of Selected Example Programs](https://github.com/subh83/DOSL/w
 - Ability to write new planners with ease. Comes with a weighted A-star (that includes Dijkstra's and normal A-star), Theta-star and S-star planner by default.
 
 ### New:
-* Important user-end change since v3.3: The `[AlgName]::Algorithm` class template now takes in the derived class as its first template parameter (a CRTP). Thus, definition of a `searchProblem` class should now be made as follows:
+* Backwards compatibility (important user-end change since v3.3): The `[AlgName]::Algorithm` class template now takes in the derived class as its first template parameter (a [CRTP](https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)). Thus, definition of a `searchProblem` class should now be made as follows:
 ```C++
     class searchProblem : public AStar::Algorithm <searchProblem, myNode, double>
     { /* ... */};                                  // ^^^^ new template parameter
 ```
-
-   See the example programs for illustrative examples and details.
+<p style="margin-left: 3em;">This change (<a href="https://stackoverflow.com/a/16988933">replacing virtual functions with CRTP</a>) has helped some programs run twice as fast. See the example programs for illustrative examples and details.</p>
 
 * New planner with an implementation of the S-star search algorithm for finding optimal path through simplicial complexes (https://arxiv.org/abs/1607.07009)
 
@@ -343,7 +342,7 @@ Version history:
 
 * May 2019: version 3.31: 'multiple definition' bug fix.
 
-* May 2019: version 3.3 released: virtual functions replaced by CRTP in `[AlgName]::Algorithm` classes, thus making some programs twice as fast; replaced node and simplex containers/heaps with pointers, making way for multi-thread programming in future; renaming of some variables and functions (back compatibility included); bug fixes.
+* May 2019: version 3.3 released: virtual functions replaced by CRTP in `[AlgName]::Algorithm` classes, thus making some programs run twice as fast; replaced node and simplex containers/heaps with pointers, making way for multi-thread programming in future; renaming of some variables and functions (back compatibility included); bug fixes.
 
 * Nov 2018: version 3.26 released: Some bug fixes. Changes made to encapsulation member functions.
 
