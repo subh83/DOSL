@@ -127,8 +127,7 @@ public:
 
 // ---------------------------
 
-template <class IntType>
-std::string get_indentation_string (IntType relTabs = 0) {
+inline std::string get_indentation_string (int relTabs = 0) {
     int nTabs = _DOSL_VERBOSE_FUN_DEPTH + relTabs;
     std::string tabStr = "";
     for (int a=0; a<nTabs; ++a)
@@ -136,8 +135,7 @@ std::string get_indentation_string (IntType relTabs = 0) {
     return (tabStr);
 }
 
-template <class IntType>
-void print_indentation (IntType relTabs = 0) {
+inline void print_indentation (int relTabs = 0) {
     std::cout << get_indentation_string(relTabs);
 }
 
@@ -196,9 +194,7 @@ TAB_TRACKED_OSTREAM _dosl_cout (std::cout); */
 
 // ====================================================
 
-template <class U>
-std::string _uint_to_binary (U _x) {
-    unsigned int x = (unsigned int) _x;
+inline std::string _uint_to_binary (unsigned int x) {
     std::string  binStr="";
     for (unsigned int z=1; z<=x; z<<=1)
         binStr = (((x & z)==0)?"0":"1") + binStr;

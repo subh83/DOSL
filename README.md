@@ -73,11 +73,14 @@ See the [Overview of Selected Example Programs](https://github.com/subh83/DOSL/w
 - Ability to write new planners with ease. Comes with a weighted A-star (that includes Dijkstra's and normal A-star), Theta-star and S-star planner by default.
 
 ### New:
-* **An important user-end change since v3.3:** The `[AlgName]::Algorithm` class template now takes in the derived class as its first template parameter (a CRTP). Thus, definition of a `searchProblem` class should now be made as follows:
+* Important user-end change since v3.3: The `[AlgName]::Algorithm` class template now takes in the derived class as its first template parameter (a CRTP). Thus, definition of a `searchProblem` class should now be made as follows:
 ```C++
     class searchProblem : public AStar::Algorithm <searchProblem, myNode, double>
     { /* ... */};                                  // ^^^^ new template parameter
 ```
+
+   See the example programs for illustrative examples and details.
+
 * New planner with an implementation of the S-star search algorithm for finding optimal path through simplicial complexes (https://arxiv.org/abs/1607.07009)
 
 *NOTE:* Discrete Optimal Search Library (DOSL) is a fork of the Yet Another Graph-Search Based Planning Library (YAGSBPL)       hosted at https://github.com/subh83/YAGSBPL . YAGSBPL is now deprecated.
