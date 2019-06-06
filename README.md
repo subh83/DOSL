@@ -318,20 +318,18 @@ Bibtex entry:
 
 If you, in particular, use the S-star search algorithm, please use the following citation:
 
-_Subhrajit Bhattacharya, "A Search Algorithm for Simplicial Complexes", Electronic Pre-print, August, 2016. arXiv:1607.07009 [cs.DM]._
+_Subhrajit Bhattacharya, "Towards optimal path computation in a simplicial complex", The International Journal of Robotics Research (IJRR), online-first, June, 2019. DOI: 10.1177/0278364919855422._
 
 Bibtex entry:
 ```
-@ARTICLE { Simplicial:star:16,
+@ARTICLE { Simplicial:star:19,
     AUTHOR = { Subhrajit Bhattacharya },
-    TITLE = { A Search Algorithm for Simplicial Complexes },
-    JOURNAL = { Electronic Pre-print },
-    MONTH = { August },
-    YEAR = { 2016 },
-    EPRINT = { 1607.07009 },
-    ARCHIVEPREFIX = { arXiv },
-    PRIMARYCLASS = { cs.DM },
-    NOTE = { arXiv:1607.07009 [cs.DM] }
+    TITLE = { Towards optimal path computation in a simplicial complex },
+    JOURNAL = { The International Journal of Robotics Research (IJRR) },
+    MONTH = { June },
+    YEAR = { 2019 },
+    NOTE = { DOI: 10.1177/0278364919855422 },
+    URL = { https://doi.org/10.1177/0278364919855422 }
 }
 ```
 
