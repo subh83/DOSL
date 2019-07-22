@@ -163,6 +163,13 @@ public:
     } 
 };
 
+
+class CompareByCoordOnly { // functor for invoking isCoordsEqual
+public:
+    bool operator() (const myNode& n1, const myNode& n2) { return n1.isCoordsEqual(n2); }
+} compare_by_coord_only;
+
+
 // ==============================================================================
 
 class searchProblem : public _DOSL_ALGORITHM::Algorithm<searchProblem,myNode,double>
@@ -411,7 +418,9 @@ public:
             #endif
             if (!cameFromNull) {
                 #if VERTEX_COLORS
-                col = cvScalar(150.0, 255.0, 150.0);
+                std::vector<myNode*> nodes_at_same_xy = all_nodes_set_p->findall (n, compare_by_coord_only);
+                double rb_intensity = MAX(0.0, 255.0 - 50.0*nodes_at_same_xy.size());
+                col = cvScalar (rb_intensity, 255.0, rb_intensity);
                 #else
                 col = cvScalar(255.0, 255.0, 255.0);
                 #endif

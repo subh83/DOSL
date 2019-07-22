@@ -35,23 +35,24 @@
 #include <climits>
 
 
-char const* RSJobjectbrackets = "{}";
-char const* RSJarraybrackets = "[]";
-char RSJobjectassignment = ':';
-char RSJarraydelimiter = ',';
+static char const* RSJobjectbrackets = "{}";
+static char const* RSJarraybrackets = "[]";
+static char RSJobjectassignment = ':';
+static char RSJarraydelimiter = ',';
 
-std::vector<char const*> RSJbrackets = {RSJobjectbrackets, RSJarraybrackets};
-std::vector<char const*> RSJstringquotes = {"\"\"", "''"};
-char RSJcharescape = '\\';
-std::string RSJlinecommentstart = "//";
+static std::vector<char const*> RSJbrackets = {RSJobjectbrackets, RSJarraybrackets};
+static std::vector<char const*> RSJstringquotes = {"\"\"", "''"};
+static char RSJcharescape = '\\';
+static std::string RSJlinecommentstart = "//";
 
-std::string RSJprinttab = "    ";
+static std::string RSJprinttab = "    ";
 
 enum RSJresourceType { RSJ_UNINITIATED, RSJ_UNKNOWN, RSJ_OBJECT, RSJ_ARRAY, RSJ_LEAF };
 
 // ============================================================
 // Direct string manipulation functions
 
+inline 
 std::string to_string (RSJresourceType rt) {
     switch (rt) {
         case RSJ_UNINITIATED: return("RSJ_UNINITIATED");
@@ -62,32 +63,36 @@ std::string to_string (RSJresourceType rt) {
     }
 }
 
-std::string strtrim (std::string str, std::string chars=" \t\n\r", int max_count=-1, std::string opts="lr") {
+enum StrTrimDir { STRTRIM_L=1, STRTRIM_R=2, STRTRIM_LR=3 };
+
+inline 
+std::string strtrim (std::string str, std::string chars=" \t\n\r", int max_count=-1, StrTrimDir dirs=STRTRIM_LR) {
     if (str.empty()) return(str);
     if (max_count<0) max_count = str.length();
     
-    if (opts.find('l')!=std::string::npos) { // left trim
+    if (dirs & STRTRIM_L) { // left trim
         int p;
         for (p=0; p<max_count; ++p)
             if (chars.find(str[p])==std::string::npos) break;
-        str.erase (0, p);
+        str.erase (0, p); // const_str::l_erase(p)
     }
     
-    if (opts.find('r')!=std::string::npos) { // right trim
+    if (dirs & STRTRIM_R) { // right trim
         int q, strlenm1=str.length()-1;
         for (q=0; q<max_count; ++q)
             if (chars.find(str[strlenm1-q])==std::string::npos) break;
-        str.erase (str.length()-q, q);
+        str.erase (str.length()-q, q); // const_str::r_erase(q)
     }
     
     return (str);
 }
 
+inline 
 std::string strip_outer_quotes (std::string str, char* qq=NULL) {
     str = strtrim (str);
     
     std::string ret = strtrim (str, "\"");
-    if (ret==str) {
+    if (ret.length()==str.length()) {
         ret = strtrim (str, "'");
         if (qq && ret!=str) *qq = '\'';
     }
@@ -99,6 +104,7 @@ std::string strip_outer_quotes (std::string str, char* qq=NULL) {
 
 // ----------------
 
+inline 
 int is_bracket (char c, std::vector<char const*>& bracks, int indx=0) {
     for (int b=0; b<bracks.size(); ++b)
         if (c==bracks[b][indx]) 
@@ -106,6 +112,7 @@ int is_bracket (char c, std::vector<char const*>& bracks, int indx=0) {
     return (-1);
 }
 
+inline 
 std::vector<std::string> split_RSJ_array (const std::string& str) { // TODO: Make efficient. This function is speed bottleneck.
     // splits, while respecting brackets and escapes
     std::vector<std::string> ret;
@@ -196,7 +203,7 @@ std::vector<std::string> split_RSJ_array (const std::string& str) { // TODO: Mak
     return (ret);
 }
 
-
+inline 
 std::string insert_tab_after_newlines (std::string str) {
     for (int a=0; a<str.length(); ++a)
         if (str[a]=='\n') {
@@ -276,7 +283,10 @@ public:
     bool exists (void) { return (_exists); }
     bool is_parsed (void) { return (parsed_data_p!=NULL); }
     RSJresourceType type (void);
-    std::string print (bool print_comments=false, bool update_data=true);
+    // emitter
+    std::string as_str (bool print_comments=false, bool update_data=true);
+    void print (bool print_comments=false, bool update_data=true) 
+        { std::cout << as_str(print_comments,update_data) << std::endl; }
     
     // opertor[]
     RSJresource& operator[] (std::string key); // object
@@ -310,13 +320,13 @@ public:
     RSJresourceType type;
     RSJparsedData() : type(RSJ_UNKNOWN) {}
     
-    // parser
+    // parser (single-level)
     void parse (const std::string& data, RSJresourceType typ = RSJ_UNKNOWN) {
         std::string content = strtrim(data);
         
         if (typ==RSJ_OBJECT || typ==RSJ_UNKNOWN) {
             // parse as object:
-            content = strtrim (strtrim (content, "{", 1, "l" ), "}", 1, "r" );
+            content = strtrim (strtrim (content, "{", 1, STRTRIM_L ), "}", 1, STRTRIM_R );
             if (content.length() != data.length()) { // a valid object
                 std::vector<std::string> nvPairs = split_RSJ_array (content);
                 for (int a=0; a<nvPairs.size(); ++a) {
@@ -335,7 +345,7 @@ public:
         
         if (typ==RSJ_ARRAY || typ==RSJ_UNKNOWN) {
             // parse as array
-            content = strtrim (strtrim (content, "[", 1, "l" ), "]", 1, "r" );
+            content = strtrim (strtrim (content, "[", 1, STRTRIM_L ), "]", 1, STRTRIM_R );
             if (content.length() != data.length()) { // a valid array
                 std::vector<std::string> nvPairs = split_RSJ_array (content);
                 for (int a=0; a<nvPairs.size(); ++a) 
@@ -409,7 +419,7 @@ RSJresource& RSJresource::operator= (const RSJresource& r) {
 }
 
 int RSJresource::size (void) {
-    parse();
+    parse(); // parse if not parsed
     return (parsed_data_p->size());
 }
 
@@ -419,7 +429,7 @@ RSJresourceType RSJresource::type (void) {
     return (parsed_data_p->type);
 }
 
-std::string RSJresource::print (bool print_comments, bool update_data) {
+std::string RSJresource::as_str (bool print_comments, bool update_data) {
     if (exists()) {
         std::string ret;
         parse(); // parse if not parsed
@@ -428,7 +438,7 @@ std::string RSJresource::print (bool print_comments, bool update_data) {
         if (parsed_data_p->type==RSJ_OBJECT) {
             ret = "{\n";
             for (auto it=parsed_data_p->object.begin(); it!=parsed_data_p->object.end(); ++it) {
-                ret += RSJprinttab + "'" + it->first + "': " + insert_tab_after_newlines( it->second.print (print_comments, update_data) );
+                ret += RSJprinttab + "'" + it->first + "': " + insert_tab_after_newlines( it->second.as_str (print_comments, update_data) );
                 if (std::next(it) != parsed_data_p->object.end()) ret += ",";
                 if (print_comments)
                     ret += " // " + to_string(it->second.type());
@@ -439,7 +449,7 @@ std::string RSJresource::print (bool print_comments, bool update_data) {
         else if (parsed_data_p->type==RSJ_ARRAY) {
             ret = "[\n";
             for (auto it=parsed_data_p->array.begin(); it!=parsed_data_p->array.end(); ++it) {
-                ret += RSJprinttab + insert_tab_after_newlines( it->print (print_comments, update_data) );
+                ret += RSJprinttab + insert_tab_after_newlines( it->as_str (print_comments, update_data) );
                 if (std::next(it) != parsed_data_p->array.end()) ret += ",";
                 if (print_comments)
                     ret += " // " + to_string(it->type());
@@ -486,9 +496,9 @@ void RSJresource::parse_full (bool force, int max_depth, int* parse_count_for_ve
 
 // ------------------------------------------------------------
 // ============================================================
-// FAST PARSER (Under Construction)
+// FAST PARSER (Under construction. DO NOT use the following functions in your application.)
 
-
+inline 
 int seek_next (std::string* str_p, int start_pos, char character) {
     
 }
@@ -683,14 +693,14 @@ mapType RSJresource::as_map (const mapType& def) { // returns copy -- for being 
 
 
 // RSJobject
-template <>
+template <> inline 
 RSJobject RSJresource::as<RSJobject> (const RSJobject& def) { // returns copy -- for being consistent with other 'as' specializations
     if (!exists()) return (def);
     return (as_object());
 }
 
 // RSJarray
-template <>
+template <> inline 
 RSJarray  RSJresource::as<RSJarray> (const RSJarray& def) { // returns copy -- for being consistent with other 'as' specializations
     if (!exists()) return (def);
     return (as_array());
@@ -700,7 +710,7 @@ RSJarray  RSJresource::as<RSJarray> (const RSJarray& def) { // returns copy -- f
 // Elementary types
 
 // String
-template <>
+template <> inline 
 std::string  RSJresource::as<std::string> (const std::string& def) {
     if (!exists()) return (def);
     
@@ -723,21 +733,21 @@ std::string  RSJresource::as<std::string> (const std::string& def) {
 }
 
 // integer
-template <>
+template <> inline 
 int  RSJresource::as<int> (const int& def) {
     if (!exists()) return (def);
     return (atoi (strip_outer_quotes(data).c_str() ) );
 }
 
 // double
-template <>
+template <> inline 
 double  RSJresource::as<double> (const double& def) {
     if (!exists()) return (def);
     return (atof (strip_outer_quotes(data).c_str() ) );
 }
 
 // bool
-template <>
+template <> inline 
 bool  RSJresource::as<bool> (const bool& def) {
     if (!exists()) return (def);
     std::string cleanData = strip_outer_quotes (data);

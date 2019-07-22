@@ -85,6 +85,7 @@ public:
     inline bool empty (void) { return (HashTable==NULL); }
     inline int size() { return (Size); }
     Key* get (key & n); // Returns pointer to already-existing item, else creates one
+    template<class FindEqFunc=EqualToFunctor> std::vector<Key*> findall (key & n, FindEqFunc eqfunc_instance, bool search_other_bins=false);
     
     // Clear
     void clear (bool destroyHashTable=false) {
@@ -175,6 +176,30 @@ key* fast_unordered_set<key,HashFunctor,EqualToFunctor>::get (key & n)
     HashTable[hashBin].push_back (newHashItem_p);
     ++Size;
     return (newHashItem_p);
+}
+
+template <class key, class HashFunctor, class EqualToFunctor>
+template<class FindEqFunc>
+std::vector<key*> fast_unordered_set<key,HashFunctor,EqualToFunctor>::findall (key& n, FindEqFunc eqfunc_instance, bool search_other_bins) {
+    if (!HashTable) init(); // TODO: remove this check?
+    
+    unsigned int startHashBin=0, endHashBinP1=hash_table_size;
+    // Search in bin
+    if (!search_other_bins) {
+    startHashBin = hash_functor_instance(n);
+    #if _DOSL_HASH_BIN_CHECK
+    startHashBin %= hash_table_size;
+    #endif
+    endHashBinP1 = startHashBin+1;
+    }
+    
+    std::vector<key*> ret;
+    for (int hashBin=startHashBin; hashBin<endHashBinP1; ++hashBin)
+        for (int a=0; a<HashTable[hashBin].size(); ++a)
+            if ( eqfunc_instance (*(HashTable[hashBin][a]), n) )
+                ret.push_back (HashTable[hashBin][a]);
+                
+    return (ret);
 }
 
 #endif

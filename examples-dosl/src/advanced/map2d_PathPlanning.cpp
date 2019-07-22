@@ -267,11 +267,11 @@ public:
             for (int b=-1; b<=1; ++b) {
                 if (a==0 && b==0) continue;
                 
-                /*#ifdef DOSL_ALGORITHM_SStar
+                #ifdef DOSL_ALGORITHM_SStar
                 int xParity = ((int)round(fabs(n.x))) % 2;
                 if (xParity==0 && (a!=0 && b==-1)) continue;
                 if (xParity==1 && (a!=0 && b==1)) continue;
-                #endif*/
+                #endif
                 
                 tn.x = n.x + a;
                 tn.y = n.y + b;

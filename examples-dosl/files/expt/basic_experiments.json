@@ -1,4 +1,13 @@
 {
+    'simple_expt1':
+    {  environment: { pixmap: "simple.png" },    // obstacle map
+        start:     [50, 250],
+        goal:      [250, 50],
+        plot_options: { plot_scale: 2.0,
+                        line_thickness: 4.0},
+        top_class: 2                           // only to be used by 'homotopy2d_PathPlanning'
+    },
+    
     'L457_expt1':
     {  environment: { pixmap: "L457.png" },    // obstacle map
         start:     [60, 60],
