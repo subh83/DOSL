@@ -418,7 +418,7 @@ public:
             #endif
             if (!cameFromNull) {
                 #if VERTEX_COLORS
-                std::vector<myNode*> nodes_at_same_xy = all_nodes_set_p->findall (n, compare_by_coord_only);
+                std::vector<myNode*> nodes_at_same_xy = all_nodes_set_p->getall (n, compare_by_coord_only);
                 double rb_intensity = MAX(0.0, 255.0 - 50.0*nodes_at_same_xy.size());
                 col = cvScalar (rb_intensity, 255.0, rb_intensity);
                 #else

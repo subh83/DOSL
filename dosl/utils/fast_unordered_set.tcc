@@ -85,7 +85,7 @@ public:
     inline bool empty (void) { return (HashTable==NULL); }
     inline int size() { return (Size); }
     Key* get (key & n); // Returns pointer to already-existing item, else creates one
-    template<class FindEqFunc=EqualToFunctor> std::vector<Key*> findall (key & n, FindEqFunc eqfunc_instance, bool search_other_bins=false);
+    template<class FindEqFunc=EqualToFunctor> std::vector<Key*> getall (key & n, FindEqFunc eqfunc_instance, bool search_other_bins=false);
     
     // Clear
     void clear (bool destroyHashTable=false) {
@@ -180,7 +180,7 @@ key* fast_unordered_set<key,HashFunctor,EqualToFunctor>::get (key & n)
 
 template <class key, class HashFunctor, class EqualToFunctor>
 template<class FindEqFunc>
-std::vector<key*> fast_unordered_set<key,HashFunctor,EqualToFunctor>::findall (key& n, FindEqFunc eqfunc_instance, bool search_other_bins) {
+std::vector<key*> fast_unordered_set<key,HashFunctor,EqualToFunctor>::getall (key& n, FindEqFunc eqfunc_instance, bool search_other_bins) {
     if (!HashTable) init(); // TODO: remove this check?
     
     unsigned int startHashBin=0, endHashBinP1=hash_table_size;
