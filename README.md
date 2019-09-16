@@ -79,7 +79,8 @@ See the [Overview of Selected Example Programs](https://github.com/subh83/DOSL/w
     { /* ... */};                                  // ^^^^ new template parameter
 ```
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This change ([replacing virtual functions with CRTP](https://stackoverflow.com/a/16988933)) has helped some example programs to run twice as fast.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Backward compatibility note (since v3.3): user needs to make this change for backward compatibility for applications using DOSL versions earlier than v3.3. See the example programs for illustration and details.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Backward compatibility note (since v3.3): Users need to make this change for backward compatibility.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;See the example programs for illustration and details.
 
 * New planner with an implementation of the S-star search algorithm for finding optimal path through simplicial complexes (https://arxiv.org/abs/1607.07009)
 
