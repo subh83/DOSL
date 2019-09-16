@@ -129,7 +129,7 @@ VPATH = bin
 
 # --------------------------------------------
 SIMPLE_FOLDER=src/simple
-simple:  minimal2d_PathPlanning_AStar  minimal2d_PathPlanning_AnyAlg  map2d_encapsulated_PathPlanning  homotopy2d_encapsulated_PathPlanning
+simple:  minimal2d_PathPlanning_AStar  minimal2d_PathPlanning_AnyAlg  map2d_encapsulated_PathPlanning  map2d_encapsulated_HomotopyPathPlanning
 
 
 .PHONY: minimal2d_PathPlanning_AStar
@@ -156,8 +156,8 @@ map2d_encapsulated_PathPlanning: cv_test
 		$(CC) $(CFLAGS) $(PROFILE) $(WARNS) $(INC_LOCAL) $(INC_DOSL) -o $(BIN_FOLDER)/$@ $(SIMPLE_FOLDER)/$@.cpp $(LIB_FOLDERS) $(LIBS) $(LIBS_OPENCV) -D_DOSL_ALGORITHM=$(DOSL_ALGORITHM)\
 	)
 
-.PHONY: homotopy2d_encapsulated_PathPlanning
-homotopy2d_encapsulated_PathPlanning: cv_test
+.PHONY: map2d_encapsulated_HomotopyPathPlanning
+map2d_encapsulated_HomotopyPathPlanning: cv_test
 	@printf "\nNow compiling '$(_BLUE)$@$(_CLEAR)'...\n"; printf $(DOSL_INTRO_STRING_DIR); printf $(DOSL_INTRO_STRING_ALG);
 	@$(call COMPILE_PROGRAM,\
 		$@,\
@@ -167,7 +167,7 @@ homotopy2d_encapsulated_PathPlanning: cv_test
 
 # --------------------------------------------
 ADVANCED_FOLDER=src/advanced
-advanced:  demo2d_PathPlanning  map2d_PathPlanning  map2d_VoronoiPartitioning  homotopy2d_PathPlanning  nonuniform2d_PathPlanning  robotArm_PathPlanning
+advanced:  demo2d_PathPlanning  map2d_PathPlanning  map2d_VoronoiPartitioning  map2d_Delaunay  map2d_HomotopyPathPlanning  nonuniform2d_PathPlanning  robotArm_PathPlanning
 
 
 .PHONY: demo2d_PathPlanning
@@ -194,8 +194,16 @@ map2d_VoronoiPartitioning: cv_test json_test
 		$(CC) $(CFLAGS) $(WARNS) $(INC_LOCAL) $(INC_DOSL) -o $(BIN_FOLDER)/$@ $(ADVANCED_FOLDER)/$@.cpp $(LIB_FOLDERS) $(LIBS) $(LIBS_OPENCV) -D_DOSL_ALGORITHM=$(DOSL_ALGORITHM)\
 	)
 
-.PHONY: homotopy2d_PathPlanning
-homotopy2d_PathPlanning: cv_test json_test
+.PHONY: map2d_Delaunay
+map2d_Delaunay: cv_test json_test
+	@printf "\nNow compiling '$(_BLUE)$@$(_CLEAR)'...\n"; printf $(DOSL_INTRO_STRING_DIR); printf $(DOSL_INTRO_STRING_ALG);
+	@$(call COMPILE_PROGRAM,\
+		$@,\
+		$(CC) $(CFLAGS) $(WARNS) $(INC_LOCAL) $(INC_DOSL) -o $(BIN_FOLDER)/$@ $(ADVANCED_FOLDER)/$@.cpp $(LIB_FOLDERS) $(LIBS) $(LIBS_OPENCV) -D_DOSL_ALGORITHM=$(DOSL_ALGORITHM)\
+	)
+
+.PHONY: map2d_HomotopyPathPlanning
+map2d_HomotopyPathPlanning: cv_test json_test
 	@printf "\nNow compiling '$(_BLUE)$@$(_CLEAR)'...\n"; printf $(DOSL_INTRO_STRING_DIR); printf $(DOSL_INTRO_STRING_ALG);
 	@$(call COMPILE_PROGRAM,\
 		$@,\
@@ -221,9 +229,9 @@ robotArm_PathPlanning: cv_test json_test matheval_test
 
 # --------------------------------------------
 
-cv_examples:  demo2d_PathPlanning  map2d_PathPlanning  homotopy2d_PathPlanning  nonuniform2d_PathPlanning  robotArm_PathPlanning  map2d_encapsulated_PathPlanning  homotopy2d_encapsulated_PathPlanning
+cv_examples:  demo2d_PathPlanning  map2d_PathPlanning  map2d_VoronoiPartitioning  map2d_Delaunay  map2d_HomotopyPathPlanning  nonuniform2d_PathPlanning  robotArm_PathPlanning  map2d_encapsulated_PathPlanning  map2d_encapsulated_HomotopyPathPlanning
 
-encapsulated_examples: map2d_encapsulated_PathPlanning  homotopy2d_encapsulated_PathPlanning
+encapsulated_examples: map2d_encapsulated_PathPlanning  map2d_encapsulated_HomotopyPathPlanning
 
 all: test simple advanced
 

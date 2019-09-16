@@ -57,8 +57,8 @@
 #define _STAT 0
 #define _VIS 1
 #define VIS_INTERVAL 100
-#define VERTEX_COLORS 1
-#define SAVE_IMG_INTERVAL 10000 // 0 to not save at all. -1 to save last frame only.
+#define VERTEX_COLORS 0
+#define SAVE_IMG_INTERVAL -1 // 0 to not save at all. -1 to save last frame only.
 
 
 // ==============================================================================
@@ -110,7 +110,7 @@ public:
     
     // print
     void print (std::string head="", std::string tail="") const {
-        _dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ " x=" << x << ", y=" << y << ", ";
+        _dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ " x=" << x << ", y=" << y << ", lin=" << lineage_data.id << ", ";
         (g_score==std::numeric_limits<double>::max())? printf("INF") : printf("%0.8f", g_score);
         /*printf ("\n");
         _dosl_cout << "\tExpanded=%d" << expanded << _dosl_endl;
@@ -120,6 +120,16 @@ public:
         std::cout << tail << _dosl_endl;
     }
 
+};
+
+
+class UnorderedIndexPair {
+public:
+    int i, j;
+    UnorderedIndexPair (int a, int b) : i(a), j(b) { }
+    bool operator==(const UnorderedIndexPair& p) const {
+        return ((i==p.i && j==p.j) || (i==p.j && j==p.i));
+    }
 };
 
 // ==============================================================================
@@ -185,11 +195,60 @@ public:
         
         // read data for planning
         MAX_X=my_map.width(); MIN_X=0; MAX_Y=my_map.height(); MIN_Y=0;
-        for (int a=0; a<expt_container["start"].size(); ++a) {
-            startNodes.push_back (myNode (expt_container["start"][a][0].as<COORD_TYPE>(), expt_container["start"][a][1].as<COORD_TYPE>()));
-            startNodes[a].put_in_grid();
-            startNodes[a].print("Start node: ");
-            colors.push_back (cvScalar (rand()%256, rand()%256, rand()%256));
+        
+        if (expt_container["start"].type() == RSJ_ARRAY)
+            for (int a=0; a<expt_container["start"].size(); ++a) {
+                startNodes.push_back (myNode (expt_container["start"][a][0].as<COORD_TYPE>(), expt_container["start"][a][1].as<COORD_TYPE>()));
+                startNodes[a].put_in_grid();
+                startNodes[a].print("Start node: ");
+                colors.push_back (cvScalar (rand()%256, rand()%256, rand()%256));
+            }
+        
+        else if (expt_container["start"].type() == RSJ_OBJECT) {
+            
+            if (expt_container["start"]["list"].exists())
+                for (int a=0; a<expt_container["start"]["list"].size(); ++a) {
+                    startNodes.push_back (myNode (expt_container["start"]["list"][a][0].as<COORD_TYPE>(), 
+                                                    expt_container["start"]["list"][a][1].as<COORD_TYPE>()));
+                    startNodes[a].put_in_grid();
+                    startNodes[a].print("Start node: ");
+                    colors.push_back (cvScalar (rand()%256, rand()%256, rand()%256));
+                }
+            
+            if (expt_container["start"]["random"].exists()) {
+                int tx, ty;
+                for (int a=0; a<expt_container["start"]["random"].as<int>(1); ++a) {
+                    do {
+                        tx = rand() % int(MAX_X);
+                        ty = rand() % int(MAX_Y);
+                    } while (my_map.isObstacle (tx, ty));
+                    startNodes.push_back (myNode (COORD_TYPE(tx), COORD_TYPE(ty)) );
+                    startNodes[a].put_in_grid();
+                    startNodes[a].print("Start node: ");
+                    colors.push_back (cvScalar (rand()%256, rand()%256, rand()%256));
+                }
+            }
+            
+            if (expt_container["start"]["random_triangulate"].exists()) {
+                int u,v;
+                COORD_TYPE tx, ty;
+                int sep = expt_container["start"]["random_triangulate"]["minsep"].as<int>(1);
+                myNode tn;
+                int wiggle = expt_container["start"]["random_triangulate"]["randomize"].as<int>(0);
+                for (int a=0; a<expt_container["start"]["random_triangulate"]["count"].as<int>(1); ++a) {
+                    do {
+                        u = rand()%int(4*MAX_X/sep) - 2*MAX_X/sep;
+                        v = rand()%int(4*MAX_Y/sep) - 2*MAX_Y/sep;;
+                        tn = myNode ( COORD_TYPE(u*sep) + COORD_TYPE(v*sep)*0.5 + COORD_TYPE(rand()%(wiggle+1)),
+                                        COORD_TYPE(v*sep)*0.6427876 + COORD_TYPE(rand()%(wiggle+1)) );
+                    } while (my_map.isOutsideFrame (round(tn.x), round(tn.y)) || my_map.isObstacle (round(tn.x), round(tn.y)) || 
+                                find (startNodes.begin(),startNodes.end(),tn)!=startNodes.end() );
+                    startNodes.push_back (tn);
+                    startNodes[a].put_in_grid();
+                    startNodes[a].print("Start node: ");
+                    colors.push_back (cvScalar (rand()%256, rand()%256, rand()%256));
+                }
+            }
         }
         
         // display options
@@ -199,7 +258,7 @@ public:
         
         // saving options
         frameno = 0;
-        imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "_map2d_VoronoiPartitioning_";
+        imgPrefix << MAKESTR(_DOSL_ALGORITHM) << GRAPH_TYPE << "_map2d_Delaunay_";
         
         #if _VIS
         image_to_display = my_map.getCvMat (COLOR_MAP);
@@ -328,6 +387,8 @@ public:
     
     // -----------------------------------------------------------
     
+    std::vector<UnorderedIndexPair> delaunay_edges;
+    
     void nodeEvent (myNode &n, unsigned int e) 
     {
         #if _VIS
@@ -357,6 +418,13 @@ public:
                 printf ("expanded, but came-from is NULL!!\n");
                 // pauseForVis = true;
             }
+            
+            //n.print("expanding: ");
+            for (auto it=n.successors.begin(); it!=n.successors.end(); ++it)
+                if (it->first->expanded  &&  it->first->lineage_data.id != n.lineage_data.id  && 
+                            std::find (delaunay_edges.begin(), delaunay_edges.end(), 
+                                            UnorderedIndexPair(n.lineage_data.id,it->first->lineage_data.id) ) == delaunay_edges.end() )
+                    delaunay_edges.push_back (UnorderedIndexPair(n.lineage_data.id,it->first->lineage_data.id));
         }
         
         else if ((e & HEAP) == PUSHED) {
@@ -411,7 +479,7 @@ int main(int argc, char *argv[])
     // Read command-line parameters:
     compute_program_path();
     
-    std::string expt_f_name = program_path+"../files/expt/basic_experiments.json", expt_name="L457_partition";
+    std::string expt_f_name = program_path+"../files/expt/basic_experiments.json", expt_name="L457_partition_rand";
     if (argc == 2) {
         expt_name = argv[1];
     }
@@ -429,6 +497,7 @@ int main(int argc, char *argv[])
     searchProblem test_search_problem (expt_f_name, expt_name, program_path+"../files/out/");
     test_search_problem.search();
     
+    // ---------------------------------------
     
     // print statistics
     #if _STAT
@@ -443,16 +512,43 @@ int main(int argc, char *argv[])
     }
     #endif
     
+    double tc;
+    
+    char edgesFname[1024]; sprintf(edgesFname, "%s_DELAUNAY_edges_(id1,id2).csv", test_search_problem.out_folderName.c_str());
+    FILE* eFile; eFile = fopen (edgesFname,"a+");
+    for (auto it=test_search_problem.delaunay_edges.begin(); it!=test_search_problem.delaunay_edges.end(); ++it)
+        if ( test_search_problem.isSegmentFree (test_search_problem.startNodes[it->i], test_search_problem.startNodes[it->j], &tc) ) {
+            fprintf(eFile, "%d, %d\n", it->i, it->j);
+            cv::line (test_search_problem.image_to_display, 
+                        test_search_problem.cv_plot_coord (test_search_problem.startNodes[it->i].x, test_search_problem.startNodes[it->i].y), 
+                            test_search_problem.cv_plot_coord (test_search_problem.startNodes[it->j].x, test_search_problem.startNodes[it->j].y), 
+                                cvScalar(200.0,200.0,200.0), 2.0); //test_search_problem.LINE_THICKNESS*test_search_problem.PLOT_SCALE
+        }
+    fclose (eFile);
+    
+    char nodesFname[1024]; sprintf(nodesFname, "%s_DELAUNAY_vetices_(id,x,y).csv", test_search_problem.out_folderName.c_str());
+    FILE* nFile; nFile = fopen (nodesFname,"a+");
+    for (int a=0; a<test_search_problem.startNodes.size(); ++a) {
+        fprintf(nFile, "%d, %f, %f\n", a, test_search_problem.startNodes[a].x, test_search_problem.startNodes[a].y);
+        cv::circle (test_search_problem.image_to_display, 
+                    test_search_problem.cv_plot_coord (test_search_problem.startNodes[a].x, test_search_problem.startNodes[a].y),
+                        3.0, cvScalar(220.0,100.0,100.0), -1, 8);
+    }
+    fclose (nFile);
+    
+    cv::imshow("Display window", test_search_problem.image_to_display);
+    
     // save image file
     #if _VIS
     if (SAVE_IMG_INTERVAL != 0) {
         char imgFname[1024];
-        sprintf(imgFname, "%s%s_partitions.png", test_search_problem.out_folderName.c_str(), 
+        sprintf(imgFname, "%s%s_DELAUNAY.png", test_search_problem.out_folderName.c_str(), 
                                                 test_search_problem.imgPrefix.str().c_str());
         cv::imwrite(imgFname, test_search_problem.image_to_display);
     }
     cvWaitKey();
     #endif
+    
     
     // clear memory
     test_search_problem.clear();

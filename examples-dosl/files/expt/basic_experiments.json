@@ -31,5 +31,13 @@
         start:    [[60, 60], [200, 300], [30,260], [200,110]] ,
         plot_options: { plot_scale: 2.0,
                         line_thickness: 4.0}
+    },
+    
+    'L457_partition_rand':
+    {  environment: { pixmap: "L457_inside.png" },    // obstacle map
+        start:      { list: [[82,90],[83,187],[192,188]],
+                      random_triangulate: {count: 800, minsep: 5, randomize: 2} }, // { random: 500 },
+        plot_options: { plot_scale: 2.0,
+                        line_thickness: 4.0}
     }
 }

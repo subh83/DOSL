@@ -95,7 +95,9 @@ public:
     
     uchar& getPixel (int x, int y) { return (map.at<uchar>(y,x)); }
     bool isFree (int x, int y) { return ((bool)(map.at<uchar>(y,x)>=obsThreshold)); }
+    bool isInFrame (int x, int y) { return (x>=0 && y>=0 && x<map.cols && y<map.rows); }
     bool isObstacle (int x, int y) { return ((bool)(map.at<uchar>(y,x)<obsThreshold)); }
+    bool isOutsideFrame (int x, int y) { return (x<0 || y<0 || x>=map.cols || y>=map.rows); }
     
     // --------------------------------------
     

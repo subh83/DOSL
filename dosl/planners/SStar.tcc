@@ -566,9 +566,11 @@ void SStar::Algorithm<AlgDerived,NodeType,CostType>::search (void)
             std::unordered_set<MetricSimplexType*> attachedMaximalSimplices = 
                             //AllSimplices.constructAllAttachedMaximalSimplices (one_simplex, &allCommonNeighbors);
                             AllSimplices.get_all_attached_maximal_simplices (one_simplex,
-                                                                            COMPUTE_ALL, true, false, // <-- defauts
-                                                                            true // <-- use ony expanded vertices
-                                                                                ); // also computed g_score-score
+                                                                            COMPUTE_ALL, // things_to_compute: default
+                                                                            true, // return_base_if_maximal: default
+                                                                            false, // force_compute: default
+                                                                            true // use_only_expnded_nodes: use ony expanded vertices
+                                                                                ); // <-- this also computed g_score
             
             if (_dosl_verbose_on(2)) {
                 _dosl_printf (_YELLOW "Number of attached maximal simplices of %x (possibly including self) = %d" YELLOW_, 
