@@ -73,13 +73,13 @@ See the [Overview of Selected Example Programs](https://github.com/subh83/DOSL/w
 - Ability to write new planners with ease. Comes with a weighted A-star (that includes Dijkstra's and normal A-star), Theta-star and S-star planner by default.
 
 ### New:
-* Backward compatibility issue (user-end change since v3.3): The `[AlgName]::Algorithm` class template now takes in the derived class as its first template parameter (a [CRTP](https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)). Thus, definition of a `searchProblem` class should now be made as follows:
+* The `[AlgName]::Algorithm` class template now takes in the derived class as its first template parameter (a [CRTP](https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)). Thus, definition of a `searchProblem` class should now be made as follows:
 ```C++
     class searchProblem : public AStar::Algorithm <searchProblem, myNode, double>
     { /* ... */};                                  // ^^^^ new template parameter
 ```
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This change ([replacing virtual functions with CRTP](https://stackoverflow.com/a/16988933)) has helped some example programs to run twice as fast.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;See the example programs for illustration and details.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Backward compatibility note (since v3.3): user needs to make this change for backward compatibility for applications using DOSL versions earlier than v3.3. See the example programs for illustration and details.
 
 * New planner with an implementation of the S-star search algorithm for finding optimal path through simplicial complexes (https://arxiv.org/abs/1607.07009)
 
