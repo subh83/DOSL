@@ -83,7 +83,7 @@ See the [Overview of Selected Example Programs](https://github.com/subh83/DOSL/w
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Backward compatibility note (since v3.3): Users need to make this change for backward compatibility.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;See the example programs for illustration and details.
 
-* New planner with an implementation of the S-star search algorithm for finding optimal path through simplicial complexes (https://arxiv.org/abs/1607.07009)
+* New planner with an implementation of the S-star search algorithm for finding optimal path through simplicial complexes (https://doi.org/10.1177/0278364919855422, https://arxiv.org/abs/1607.07009)
 
 *NOTE:* Discrete Optimal Search Library (DOSL) is a fork of the Yet Another Graph-Search Based Planning Library (YAGSBPL)       hosted at https://github.com/subh83/YAGSBPL . YAGSBPL is now deprecated.
 
@@ -289,7 +289,7 @@ The shortest path is stored in the member `std::vector< std::vector< cv::Point >
 void cvMulticlassPathPlanner::draw_paths (cv::Mat& in_map, cv::Mat& out_map, ...);
 cv::Mat cvMulticlassPathPlanner::draw_paths (...)
 ```
-See the example in `examples-dosl/src/simple/homotopy2d_encapsulated_PathPlanning.cpp` for more details.
+See the example in `examples-dosl/src/simple/map2d_encapsulated_HomotopyPathPlanning.cpp` for more details.
 ******************************************************************************************
 
 Documentation:
