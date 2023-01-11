@@ -50,6 +50,10 @@
 #define _S_STAR_DOSL_CASCADED_BACKTRACE false
 #endif
 
+#ifndef _S_STAR_DOSL_GENERATE_GRAND_CHILDREN
+#define _S_STAR_DOSL_GENERATE_GRAND_CHILDREN true
+#endif
+
 // 2: proctively fix directionality; 1: report when error due to directionality; 0: no check
 #ifndef _DOSL_CHECK_GRAPH_DIRECTIONALITY
 #define _DOSL_CHECK_GRAPH_DIRECTIONALITY 1
@@ -398,11 +402,11 @@ void SStar::Algorithm<AlgDerived,NodeType,CostType>::search (void)
     // -----------------------------------
     // Insert start nodes into open list
     for (a=0; a<start_nodes.size(); a++) {
-        start_nodes[a].clear_search_data (CLEAR_NODE_SUCCESSORS | CLEAR_NODE_LINEAGE); // in case this node is output of a previous search
+        start_nodes[a].clear_search_data (CLEAR_NODE_SUCCESSORS); // in case this node is output of a previous search
         // put start node in hash
         thisNodeInHash_p = all_nodes_set_p->get (start_nodes[a]);
         // set member variables for start node
-        if (!(thisNodeInHash_p->lineage_data.is_set()))
+        if (!(thisNodeInHash_p->lineage_data.is_set() && thisNodeInHash_p->lineage_data.generation==0))
             thisNodeInHash_p->lineage_data = LineageDataType(a);
         thisNodeInHash_p->expanded = false;
         thisNodeInHash_p->backTrackVertex = 0;
@@ -437,14 +441,16 @@ void SStar::Algorithm<AlgDerived,NodeType,CostType>::search (void)
         generate_successors (thisNodeInHash_p);
         
         // Generate successors of unexpanded neighbors
+        #if _S_STAR_DOSL_GENERATE_GRAND_CHILDREN
         for (auto it=thisNodeInHash_p->successors.begin(); it!=thisNodeInHash_p->successors.end(); ++it) {
             this_neighbour_node_in_hash_p = it->first;
             if (!(this_neighbour_node_in_hash_p->expanded)) 
                 generate_successors (this_neighbour_node_in_hash_p);
         }
+        #endif
         
         #if _DOSL_CHECK_GRAPH_DIRECTIONALITY >= 2
-        for (auto it=thisNodeInHash_p->successors.begin(); it!=thisNodeInHash_p->successors.end(); ++it)
+        for (auto it=thisNodeInHash_p->successors.begin(); it!=thisNodeInHash_p->successors.end(); ++it) {
             if ( it->first->successors_created  &&  
                     it->first->successors.find(thisNodeInHash_p)==it->first->successors.end() ) {
                 thisNodeInHash_p->print("node being expanded: ");
@@ -452,14 +458,17 @@ void SStar::Algorithm<AlgDerived,NodeType,CostType>::search (void)
                 _dosl_warn("Asymmetric successors (not an undirected graph as is required by SStar). Autofixing.\n");
                 it->first->successors [thisNodeInHash_p] = thisNodeInHash_p->successors[it->first];
             }
-        for (auto it=this_neighbour_node_in_hash_p->successors.begin(); it!=this_neighbour_node_in_hash_p->successors.end(); ++it)
-            if ( it->first->successors_created  &&  
-                    it->first->successors.find(this_neighbour_node_in_hash_p)==it->first->successors.end() ) {
-                this_neighbour_node_in_hash_p->print("node being updated: ");
-                it->first->print("neighbor not containg expanding node in its successor: ");
-                _dosl_warn("Asymmetric successors (not an undirected graph as is required by SStar). Autofixing.\n");
-                it->first->successors [this_neighbour_node_in_hash_p] = this_neighbour_node_in_hash_p->successors[it->first];
-            }
+            // fixing second generation (grand-children) connections:
+            this_neighbour_node_in_hash_p = it->first;
+            for (auto it2=this_neighbour_node_in_hash_p->successors.begin(); it2!=this_neighbour_node_in_hash_p->successors.end(); ++it2)
+                if ( it2->first->successors_created  &&  
+                        it2->first->successors.find(this_neighbour_node_in_hash_p)==it2->first->successors.end() ) {
+                    this_neighbour_node_in_hash_p->print("node being updated: ");
+                    it2->first->print("neighbor not containg expanding node in its successor: ");
+                    _dosl_warn("Asymmetric successors (not an undirected graph as is required by SStar). Autofixing.\n");
+                    it2->first->successors [this_neighbour_node_in_hash_p] = this_neighbour_node_in_hash_p->successors[it2->first];
+                }
+        }
         #endif
         
         // -----------------------------------------------------
@@ -598,7 +607,7 @@ void SStar::Algorithm<AlgDerived,NodeType,CostType>::search (void)
             }
             #if _DOSL_CHECK_GRAPH_DIRECTIONALITY >= 1
             else { // test_came_from_simplex==NULL
-                for (auto it=thisNodeInHash_p->successors.begin(); it!=thisNodeInHash_p->successors.end(); ++it)
+                for (auto it=thisNodeInHash_p->successors.begin(); it!=thisNodeInHash_p->successors.end(); ++it) {
                     if ( it->first->successors_created  &&  
                             it->first->successors.find(thisNodeInHash_p)==it->first->successors.end() ) {
                         thisNodeInHash_p->print("node being expanded: ");
@@ -612,20 +621,23 @@ void SStar::Algorithm<AlgDerived,NodeType,CostType>::search (void)
                         _dosl_err("Asymmetric successors (not an undirected graph as is required by SStar).\n");
                         //#endif
                     }
-                for (auto it=this_neighbour_node_in_hash_p->successors.begin(); it!=this_neighbour_node_in_hash_p->successors.end(); ++it)
-                    if ( it->first->successors_created  &&  
-                            it->first->successors.find(this_neighbour_node_in_hash_p)==it->first->successors.end() ) {
-                        this_neighbour_node_in_hash_p->print("node being updated: ");
-                        it->first->print("neighbor not containg expanding node in its successor: ");
-                        /*#if _DOSL_AUTO_FIX_GRAPH_DIRECTIONALITY
-                        _dosl_warn("Asymmetric successors (not an undirected graph as is required by SStar). Autofixing.\n");
-                        it->first->successors [this_neighbour_node_in_hash_p] = this_neighbour_node_in_hash_p->successors[it->first];
-                        #else */
-                        _this->nodeEvent (*this_neighbour_node_in_hash_p, ERROR);
-                        _this->nodeEvent (*(it->first), ERROR);
-                        _dosl_err("Asymmetric successors (not an undirected graph as is required by SStar).\n");
-                        // #endif
-                    }
+                    // checking second generation (grand-children) connections:
+                    this_neighbour_node_in_hash_p = it->first;
+                    for (auto it2=this_neighbour_node_in_hash_p->successors.begin(); it2!=this_neighbour_node_in_hash_p->successors.end(); ++it2)
+                        if ( it2->first->successors_created  &&  
+                                it2->first->successors.find(this_neighbour_node_in_hash_p)==it2->first->successors.end() ) {
+                            this_neighbour_node_in_hash_p->print("node being updated: ");
+                            it2->first->print("neighbor not containg expanding node in its successor: ");
+                            /*#if _DOSL_AUTO_FIX_GRAPH_DIRECTIONALITY
+                            _dosl_warn("Asymmetric successors (not an undirected graph as is required by SStar). Autofixing.\n");
+                            it2->first->successors [this_neighbour_node_in_hash_p] = this_neighbour_node_in_hash_p->successors[it2->first];
+                            #else */
+                            _this->nodeEvent (*this_neighbour_node_in_hash_p, ERROR);
+                            _this->nodeEvent (*(it2->first), ERROR);
+                            _dosl_err("Asymmetric successors (not an undirected graph as is required by SStar).\n");
+                            // #endif
+                        }
+                }
             }
             #endif
             

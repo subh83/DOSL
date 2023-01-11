@@ -328,12 +328,12 @@ void ThetaStar::Algorithm<AlgDerived,NodeType,CostType>::search (void)
     // -----------------------------------
     // Insert start nodes into open list
     for (int a=0; a<start_nodes.size(); a++) {
-        start_nodes[a].clear_search_data (CLEAR_NODE_SUCCESSORS | CLEAR_NODE_LINEAGE); // in case this node is output of a previous search
+        start_nodes[a].clear_search_data (CLEAR_NODE_SUCCESSORS); // in case this node is output of a previous search
         // put start node in hash
         thisNodeInHash_p = all_nodes_set_p->get (start_nodes[a]);
         // set member variables for start node
         thisNodeInHash_p->came_from = NULL;
-        if (!(thisNodeInHash_p->lineage_data.is_set()))
+        if (!(thisNodeInHash_p->lineage_data.is_set() && thisNodeInHash_p->lineage_data.generation==0))
             thisNodeInHash_p->lineage_data = LineageDataType(a); // lineage a, generation 0
         thisNodeInHash_p->expanded = false;
         thisNodeInHash_p->g_score = (CostType)0.0;

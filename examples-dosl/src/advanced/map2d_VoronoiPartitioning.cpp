@@ -110,7 +110,7 @@ public:
     
     // print
     void print (std::string head="", std::string tail="") const {
-        _dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ " x=" << x << ", y=" << y << ", ";
+        _dosl_cout << _GREEN + head << " (" << this << ")" GREEN_ " x=" << x << ", y=" << y << ", lineage id=" << lineage_data.id << "; ";
         (g_score==std::numeric_limits<double>::max())? printf("INF") : printf("%0.8f", g_score);
         /*printf ("\n");
         _dosl_cout << "\tExpanded=%d" << expanded << _dosl_endl;
@@ -188,6 +188,8 @@ public:
         for (int a=0; a<expt_container["start"].size(); ++a) {
             startNodes.push_back (myNode (expt_container["start"][a][0].as<COORD_TYPE>(), expt_container["start"][a][1].as<COORD_TYPE>()));
             startNodes[a].put_in_grid();
+            if (expt_container["start"][a].size() > 2) // 'id' provided as a third coordinate
+                startNodes[a].lineage_data = _DOSL_ALGORITHM::LineageDataType(expt_container["start"][a][2].as<int>());
             startNodes[a].print("Start node: ");
             colors.push_back (cvScalar (rand()%256, rand()%256, rand()%256));
         }
@@ -319,9 +321,11 @@ public:
     std::vector<myNode> getStartNodes (void) 
     {
         #if _VIS
-        for (int a=0; a<startNodes.size(); ++a)
+        for (int a=0; a<startNodes.size(); ++a) {
+            // startNodes[a].print();
             cv::circle (image_to_display, cv_plot_coord(startNodes[a].x,startNodes[a].y), VERTEX_SIZE*PLOT_SCALE, 
                                                                 cvScalar (200.0, 150.0, 150.0), -1, 8);
+        }
         #endif
         return (startNodes);
     }

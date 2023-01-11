@@ -25,6 +25,7 @@
 *************************************************************************************** **/
 
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string>
 #include <iostream>
@@ -123,6 +124,12 @@ public:
     
     bool stopSearch (myNode &n) {
         return (n==goal_node);
+    }
+    
+    // Optional heuristic function definition. A zero heuristic is assumed if not defined.
+    double getHeuristics (myNode& n) {
+        double dx = n.x-goal_node.x, dy = n.y-goal_node.y;
+        return (sqrt(dx*dx+dy*dy)); // Euclidean heuristic function
     }
     
 };

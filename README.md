@@ -129,7 +129,7 @@ DOSL uses graphs as the most basic form of discrete representation. In order to 
 
 1. A class defining the type of node/vertex in the graph. This class needs to be derived from DOSL's `[AlgName]::Node` class (where`[AlgName]` is the name of the algorithm being used). The user must overload `operator==` for this class so that DOSL knows how to tell whether two nodes are the same or different.
 
-2. A class defining the other aspects of the graph structure and the search problem. This class needs to be derived from DOSL's `[AlgName]::Algorithm` class. Typical members of this class (virtual members of `[AlgName]::Algorithm`) that the user needs to define are `getSuccessors`, `getStartNodes` and `stopSearch`.
+2. A class defining the other aspects of the graph structure and the search problem. This class needs to be derived from DOSL's `[AlgName]::Algorithm` class. Typical members of this class (virtual members of `[AlgName]::Algorithm`) that the user needs to define are `getSuccessors`, `getStartNodes`, `stopSearch` and `getHeuristics`.
 
 
 Below is a bare-bones example, with explanations in comments, illustrating the use of DOSL with the AStar algorithm:
@@ -138,6 +138,7 @@ Below is a bare-bones example, with explanations in comments, illustrating the u
 ```C++
 // standard headers
 #include <stdio.h>
+#include <math.h>
 #include <vector>
 #include <iostream>
 
@@ -218,6 +219,8 @@ public:
         return (startNodes);
     }
     
+    // Optional Functions:
+    
     /* Prototype for 'AStar::Algorithm<>::stopSearch':
            bool stopSearch (NodeType& n);
        Description: Determines whether to stop the search when 'n' is being expanded.
@@ -225,6 +228,17 @@ public:
     
     bool stopSearch (myNode &n) {
         return (n==goal_node);
+    }
+    
+    /* Prototype for 'AStar::Algorithm<>::getHeuristics':
+           CostType getHeuristics (NodeType& n);
+       Description: Heuristic function for the search.
+       Optional -- If not provided, a zero heuristic is assumed. */
+    
+    double getHeuristics (myNode& n) {
+        double dx = goal_node.x - n.x;
+        double dy = goal_node.y - n.y;
+        return (sqrt(dx*dx + dy*dy)); // Euclidean heuristic function
     }
 };
 

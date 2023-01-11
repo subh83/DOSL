@@ -25,6 +25,7 @@
 *************************************************************************************** **/
 
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string>
 #include <iostream>
@@ -120,6 +121,7 @@ public:
         std::cout << tail << _dosl_endl;
     }
     
+    #ifdef DOSL_ALGORITHM_SStar
     // ---------------------------------------------------------------
     // Operator overloading for convex combination -- for Path Recnstruction in SStar algorithm
     
@@ -136,6 +138,7 @@ public:
         ret.y *= c;
         return (ret);
     } 
+    #endif
 };
 
 // ==============================================================================
@@ -323,10 +326,13 @@ public:
     
     double getHeuristics (myNode& n)
     {
-        /* double dx = goalNode.x - n.x;
+        #ifdef DOSL_ALGORITHM_SStar
+        return (0.0); // SStar algorithm cannot yet handle heuristic function correctly
+        #else
+        double dx = goalNode.x - n.x;
         double dy = goalNode.y - n.y;
-        return (sqrt(dx*dx + dy*dy)); */
-        return (0.0); // Dijkstra's
+        return (sqrt(dx*dx + dy*dy)); // Euclidean heuristic function
+        #endif
     }
     
     // -----------------------------------------------------------

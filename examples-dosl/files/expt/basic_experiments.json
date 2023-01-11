@@ -28,7 +28,14 @@
 
     'L457_partition':
     {  environment: { pixmap: "L457.png" },    // obstacle map
-        start:    [[60, 60], [200, 300], [30,260], [200,110]] ,
+        start:    [[60, 60, 1], [200, 300, 1], [30,260, 2], [200,110, 2]] ,  // x, y, id
+        plot_options: { plot_scale: 2.0,
+                        line_thickness: 4.0}
+    },
+    
+    'river_partition':
+    {  environment: { pixmap: "river.png" },    // obstacle map
+        start:    [[124, 161], [203, 277], [373,140]] ,
         plot_options: { plot_scale: 2.0,
                         line_thickness: 4.0}
     },
