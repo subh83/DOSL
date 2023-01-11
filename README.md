@@ -35,14 +35,14 @@ Discrete Optimal Search Library (DOSL)
 
 *******************************************************************************
 
-Output from example program `map2d_PathPlanning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph (requires OpenCV):
+Output from example program `map2d_PathPlanning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph and Euclidean heuristic function (requires OpenCV):
 
 <p align="center"><table border=0 width=100%>
  <tr>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_10000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_20000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d_30000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8map2d__path.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8_map2d_PathPlanning_05000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8_map2d_PathPlanning_10000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8_map2d_PathPlanning_05000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8_map2d_PathPlanning__path.png" width="180"/></td>
  </tr>
  <tr>
   <td align="center">10000 vertices expanded</td>

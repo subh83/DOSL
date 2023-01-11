@@ -59,7 +59,7 @@
 #define _VIS 1
 #define VIS_INTERVAL 100
 #define VERTEX_COLORS 1
-#define SAVE_IMG_INTERVAL 10000 // 0 to not save at all. -1 to save last frame only.
+#define SAVE_IMG_INTERVAL 1000 // 0 to not save at all. -1 to save last frame only.
 
 
 // ==============================================================================
