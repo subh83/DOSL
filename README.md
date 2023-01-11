@@ -45,9 +45,9 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
   <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8_map2d_PathPlanning__path.png" width="180"/></td>
  </tr>
  <tr>
+  <td align="center">5000 vertices expanded</td>
   <td align="center">10000 vertices expanded</td>
-  <td align="center">20000 vertices expanded</td>
-  <td align="center">30000 vertices expanded</td>
+  <td align="center">15000 vertices expanded</td>
   <td align="center">Final path</td>
  </tr>
 </table></p>
