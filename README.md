@@ -41,7 +41,7 @@ Output from example program `map2d_PathPlanning` showing the progress of A* sear
  <tr>
   <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8_map2d_PathPlanning_05000.png" width="180"/></td>
   <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8_map2d_PathPlanning_10000.png" width="180"/></td>
-  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8_map2d_PathPlanning_05000.png" width="180"/></td>
+  <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8_map2d_PathPlanning_15000.png" width="180"/></td>
   <td><img src="http://subhrajit.net/files/externally-linked-files/images/github-DOSL/AStar8_map2d_PathPlanning__path.png" width="180"/></td>
  </tr>
  <tr>
