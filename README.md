@@ -35,7 +35,7 @@ Discrete Optimal Search Library (DOSL)
 
 *******************************************************************************
 
-Output from example program `map2d_PathPlanning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph and Euclidean heuristic function (requires OpenCV):
+Output from example program `map2d_PathPlanning` showing the progress of A* search algorithm in finding shortest path in an 8-connected grid graph and using an Euclidean heuristic function (requires OpenCV):
 
 <p align="center"><table border=0 width=100%>
  <tr>
@@ -354,6 +354,8 @@ Bibtex entry:
 
 Version history:
 ---------------
+
+* Jan 2023: version 3.32: Graph directionality auto-correct bug-fix in SStar; Added demonstration of use of non-zero heuristic function in example program and the bare-bones example.
 
 * May 2019: version 3.31: 'multiple definition' bug fix.
 

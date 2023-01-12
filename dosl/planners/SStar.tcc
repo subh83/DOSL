@@ -56,7 +56,7 @@
 
 // 2: proctively fix directionality; 1: report when error due to directionality; 0: no check
 #ifndef _DOSL_CHECK_GRAPH_DIRECTIONALITY
-#define _DOSL_CHECK_GRAPH_DIRECTIONALITY 1
+#define _DOSL_CHECK_GRAPH_DIRECTIONALITY 2
 #endif
 
 // --------------------------------------------------------------------
